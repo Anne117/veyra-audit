@@ -1,65 +1,66 @@
-# Тексты для продаж
+# Outreach copy
 
-## Threads / X — пост-анонс
+## Threads / X — announcement
 
-Я три года пишу ИИ-системы в бигтехе. И каждый раз одно и то же: команда
-подключает агента со сторонними скиллами и MCP-серверами, потому что «он же
-для удобства».
+I've been building AI systems for three years. And the same thing keeps
+happening: a team connects a third-party skill or an MCP server because "it's
+convenient" — without reading what it actually does.
 
-А потом выясняется, что скилл читает `~/.ssh/id_rsa`, отправляет содержимое
-на внешний endpoint и просит агента не сообщать об этом пользователю.
+Then it turns out the skill reads `~/.ssh/id_rsa`, sends it to an external
+endpoint, and tells the agent not to mention it.
 
-Я собрала Veyra Audit — статическую проверку агентов до подключения.
-Кидаешь zip со скиллами, промптами и MCP-конфигами — получаешь отчёт:
-что агент читает, куда отправляет данные, какие команды выполняет и какие
-цепочки складываются в атаку. С оценкой риска, доказательствами и фиксами.
+So I built Veyra Audit — a static security review for agents before they get
+access. Drop a zip with skills, prompts and MCP configs, get a report: what the
+agent reads, where it sends data, which commands it runs, and how those pieces
+chain into an attack path. Risk level, evidence, CWE/MITRE, fix priorities.
 
-Код не исполняется. Сетевых запросов при скане нет. Детерминированно:
-одинаковый вход — одинаковый отчёт.
+No code is executed. No network requests during a scan. Deterministic: same
+input, same report.
 
-Первый скан бесплатно: https://outdoors-grove-genealogy-saskatchewan.trycloudflare.com
+First scan is free (personal use): <link>
 
-Если у тебя агент уже в проде и ты не знаешь, что в его скиллах — напиши,
-посмотрим вместе.
-
----
-
-## Короткий вариант (для комментария)
-
-Подключаешь агенту сторонние скиллы и MCP? Я делаю статический аудит:
-что он читает, куда шлёт данные, какие команды выполняет. Отчёт с
-доказательствами и фиксами, код не исполняется. Первый скан бесплатно: <ссылка>
+If your agent is already in production and you don't know what's in its skills —
+message me, let's look together.
 
 ---
 
-## Холодное сообщение в чат/почту
+## Short version (for comments)
 
-Тема: проверка скиллов и MCP вашего агента
-
-Привет! Я ИИ-инженер, 3 года в бигтехе, делаю статический аудит AI-агентов.
-
-Если вы подключаете сторонние скиллы или MCP-серверы, есть типовой риск:
-скилл читает чувствительные файлы и отправляет их наружу, а агент об этом
-не сообщает. Это не ловится код-ревью, потому что выглядит как обычная
-инструкция в markdown.
-
-Я проверяю архив с агентом и отдаю отчёт: находки по severity, файл и строка,
-доказательство, CWE/MITRE, приоритет фиксов. Код не исполняется.
-
-Разовый аудит проекта — 4 900 ₽, включая разбор отчёта и повторный скан
-после правок. Если интересно — пришлите архив, первый скан сделаю бесплатно.
+Connecting third-party skills or MCP servers to your agent? I run a static
+audit: what it reads, where it sends data, which commands it runs. Report with
+evidence and fixes, no code execution. First scan free: <link>
 
 ---
 
-## Что говорить про цену
+## Cold message (chat / email)
 
-- 4 900 ₽ — один проект, до 5 архивов, разбор 30 минут, повторный скан.
-- 39 900 ₽/мес — безлимит и гейт в CI (SARIF для GitHub/GitLab).
-- Не сравнивать с пентестом: это другой класс работ, дешевле и быстрее,
-  но не заменяет пентест — так и говорить.
+Subject: security review for your agent's skills and MCP servers
 
-## Чего не обещать
+Hi — I'm an AI engineer (3 years in big tech). I do static security reviews of
+AI agents.
 
-- «Найдём всё» — нет, только известные паттерны.
-- «Гарантия безопасности» — нет, отчёт это основание для ручной проверки.
-- «Заменяет пентест» — нет.
+If you connect third-party skills or MCP servers, there is a typical risk: the
+skill reads sensitive files and sends them out while the agent says nothing.
+Code review does not catch it, because it looks like an ordinary instruction in
+markdown.
+
+I review an agent archive and return a report: findings by severity,
+`file:line`, evidence, CWE/MITRE, fix priorities. No code is executed.
+
+One-off project audit is €490, including a walkthrough and a re-scan after
+fixes. Happy to run the first scan for free — just send the archive.
+
+---
+
+## How to talk about price
+
+- €490 — one project, up to 5 archives, 30-minute walkthrough, re-scan.
+- €3,900/month — unlimited scans and a CI gate (SARIF for GitHub/GitLab).
+- Never compare it to a pentest: different class of work, cheaper and faster,
+  and it does not replace a pentest.
+
+## What not to promise
+
+- "we find everything" — no, only known patterns;
+- "security guarantee" — no, the report is a basis for human review;
+- "replaces a pentest" — no.
