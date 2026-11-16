@@ -91,6 +91,7 @@ def report(scan_id: str):
         score=(d.get("score_all", 0) if include_docs else d.get("score_code", 0)),
         risk=(d.get("risk_all", "—") if include_docs else d.get("risk_code", "—")),
         raw=(d.get("weight_all", 0) if include_docs else d.get("weight_code", 0)),
+        bucket=(d.get("bucket_all", "—") if include_docs else d.get("bucket_code", "—")),
         order=["CRITICAL", "HIGH", "MEDIUM", "LOW"])
 
 

@@ -49,6 +49,24 @@ def _score(findings: list[dict]) -> tuple[int, int]:
     return min(raw, 100), raw
 
 
+SEV_RANK = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1, "INFO": 0}
+
+
+def _max_risk(findings: list[dict]) -> str:
+    """Риск по самой тяжёлой находке, а не по сумме весов.
+
+    Сумма весов — это объём шума: двадцать MEDIUM («HTTP-вызов в скрипте»)
+    дают 100/100, хотя критичного там нет. Уровень риска должен отвечать на
+    вопрос «насколько плохо», а не «сколько нашлось».
+    """
+    best = "SAFE"
+    for f in findings:
+        sev = (f.get("severity") or "").upper()
+        if SEV_RANK.get(sev, 0) > SEV_RANK.get(best, 0):
+            best = sev
+    return best if best != "INFO" else "LOW"
+
+
 def _risk_level(score: int) -> str:
     if score >= 80:
         return "CRITICAL"
@@ -170,8 +188,10 @@ def run_scan(archive: bytes, filename: str = "upload.zip") -> dict:
         # пример команды в README не должен переводить проект в CRITICAL.
         data["score_code"], data["weight_code"] = _score(code)
         data["score_all"], data["weight_all"] = _score(findings)
-        data["risk_code"] = _risk_level(data["score_code"])
-        data["risk_all"] = _risk_level(data["score_all"])
+        data["risk_code"] = _max_risk(code)
+        data["risk_all"] = _max_risk(findings)
+        data["bucket_code"] = _risk_level(data["score_code"])
+        data["bucket_all"] = _risk_level(data["score_all"])
         data["capped_code"] = data["weight_code"] >= 100
         data["capped_all"] = data["weight_all"] >= 100
         return data

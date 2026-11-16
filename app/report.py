@@ -95,11 +95,15 @@ def to_markdown(d: dict, include_docs: bool = False) -> str:
     lines.append(f"- **Время скана:** {d.get('elapsed_ms', 0)} мс")
     lines.append(f"- **Режим оценки:** {'код + документация' if include_docs else 'только код и конфиги'}")
     lines.append("")
-    lines.append(f"## Итог: оценка риска {score}/100 · **{risk}**")
+    lines.append(f"## Итог: уровень риска **{risk}** · объём находок {score}/100")
+    bucket = d.get("bucket_all" if include_docs else "bucket_code")
+    if bucket and bucket != risk:
+        lines.append("")
+        lines.append(f"> Сумма весов даёт {bucket}: это объём находок, а не их тяжесть. "
+                     f"Уровень риска считается по самой тяжёлой находке.")
     if raw >= 100:
         lines.append("")
-        lines.append(f"> Потолок шкалы: сырая сумма весов {raw}. 100/100 — это «потолок достигнут», "
-                     "а не «в сто раз хуже».")
+        lines.append(f"> Потолок шкалы объёма: сырая сумма весов {raw}.")
     lines.append("")
     lines.append(RISK_TEXT.get(risk, "Чем выше оценка — тем хуже."))
     lines.append("")

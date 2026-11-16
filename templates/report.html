@@ -27,16 +27,21 @@
           <div style="position:absolute;inset:9px;border-radius:50%;background:var(--panel);display:grid;place-items:center;text-align:center">
             <div>
               <div style="font-size:26px;font-weight:780;letter-spacing:-.03em;line-height:1">{{ score }}</div>
-              <div style="font:10px/1 var(--mono);color:var(--muted);margin-top:4px">/100</div>
+              <div style="font:10px/1 var(--mono);color:var(--muted);margin-top:4px">/100 объём</div>
             </div>
           </div>
         </div>
         <div>
           <div class="sev {{ rl }}" style="display:inline-block;margin-bottom:8px">{{ rl }}</div>
-          <div style="font-weight:650;font-size:15px">Оценка риска</div>
+          <div style="font-weight:650;font-size:15px">Уровень риска</div>
           <div style="color:var(--muted);font-size:12.5px;margin-top:2px">
-            {% if include_docs %}код + документация{% else %}только код и конфиги{% endif %}
+            по самой тяжёлой находке · {% if include_docs %}код + документация{% else %}код и конфиги{% endif %}
           </div>
+          {% if bucket != rl %}
+          <div style="color:var(--muted);font-size:11.5px;margin-top:6px">
+            сумма весов даёт {{ bucket }} — это объём находок, не тяжесть
+          </div>
+          {% endif %}
           {% if d.policy_status %}<div style="margin-top:10px;font:11px/1 var(--mono);color:var(--muted)">policy: {{ d.policy_status }}</div>{% endif %}
         </div>
       </div>
@@ -66,7 +71,7 @@
         {% endif %}
         {% if raw >= 100 %}
         <div style="margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.08);color:#fcd34d;font-size:12.5px">
-          Потолок шкалы: сырая сумма весов {{ raw }}. 100/100 значит «потолок достигнут», а не «в сто раз хуже».
+          Объём: сырая сумма весов {{ raw }}, шкала обрезана на 100. Это количество находок, а не тяжесть.
         </div>
         {% endif %}
         {% if docs_count and not include_docs %}
