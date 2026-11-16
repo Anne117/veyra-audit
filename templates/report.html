@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Отчёт {{ d.scan_id }} — Veyra Audit{% endblock %}
+{% block content %}
+<section class="pad" style="padding-top:40px">
+  <div class="wrap">
+    <div class="row" style="justify-content:space-between;margin-bottom:22px">
+      <div>
+        <a href="{{ url_for('index') }}" style="font-size:13px">← новый скан</a>
+        <h1 style="font-size:clamp(26px,3.6vw,40px);margin:10px 0 6px">Отчёт аудита</h1>
+        <p class="sub" style="margin:0">
+          {{ d.source_name }} · scan <code style="font-family:var(--mono);color:var(--muted)">{{ d.scan_id }}</code> ·
+          {{ d.elapsed_ms }} мс · {{ d.findings|length }} находок
+        </p>
+      </div>
+      <div class="row">
+        <a class="btn sm" href="{{ url_for('report_md', scan_id=d.scan_id) }}">↓ Markdown</a>
+        <a class="btn sm" href="{{ url_for('report_json', scan_id=d.scan_id) }}">↓ JSON</a>
+      </div>
+    </div>
+
+    {% set rl = d.risk_level %}
+    {% set pct = d.score if d.score <= 100 else 100 %}
+    <div class="hero-grid" style="grid-template-columns:340px 1fr;gap:16px">
+      <div class="card" style="display:flex;gap:20px;align-items:center">
+        <div style="width:112px;height:112px;border-radius:50%;flex:0 0 112px;position:relative;
+             background:conic-gradient({% if rl=='CRITICAL' %}#fb7185{% elif rl=='HIGH' %}#fb923c{% elif rl=='MEDIUM' %}#fbbf24{% elif rl=='LOW' %}#94a3b8{% else %}#4ade80{% endif %} {{ pct*3.6 }}deg, rgba(255,255,255,.07) 0);">
+          <div style="position:absolute;inset:9px;border-radius:50%;background:var(--panel);display:grid;place-items:center;text-align:center">
+            <div>
+              <div style="font-size:26px;font-weight:780;letter-spacing:-.03em;line-height:1">{{ d.score }}</div>
+              <div style="font:10px/1 var(--mono);color:var(--muted);margin-top:4px">/100</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="sev {{ rl }}" style="display:inline-block;margin-bottom:8px">{{ rl }}</div>
+          <div style="font-weight:650;font-size:15px">Оценка риска</div>
+          <div style="color:var(--muted);font-size:12.5px;margin-top:2px">чем выше — тем хуже</div>
+          {% if d.policy_status %}<div style="margin-top:10px;font:11px/1 var(--mono);color:var(--muted)">policy: {{ d.policy_status }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font:12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Находки по severity</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+          {% for sev in order %}
+          <div style="border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.02)">
+            <div class="sev {{ sev }}" style="display:inline-block">{{ sev }}</div>
+            <div style="font-size:24px;font-weight:750;letter-spacing:-.03em;margin-top:8px">{{ groups[sev]|length }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% if d.counts %}<div style="color:var(--muted);font-size:12.5px;margin-top:12px">Всего: {{ d.findings|length }}{% if d.counts.get('suppressed') %} · подавлено: {{ d.counts['suppressed'] }}{% endif %}</div>{% endif %}
+      </div>
+    </div>
+
+    {% if d.agent_roots %}
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin-bottom:8px">Что проверялось</h3>
+      <div class="chips">
+        {% for r in d.agent_roots[:24] %}<span class="chip">{{ r }}</span>{% endfor %}
+        {% if d.agent_roots|length > 24 %}<span class="chip">+{{ d.agent_roots|length - 24 }}</span>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if d.findings|length == 0 %}
+    <div class="card" style="margin-top:16px;text-align:center;padding:40px">
+      <div style="font-size:30px;margin-bottom:8px">⛨</div>
+      <h3>Известных паттернов не найдено</h3>
+      <p style="max-width:52ch;margin:8px auto 0">Это значит «не найдено известных проблем», а не «абсолютно безопасно».
+      {% if d.coverage %}Покрытие: {{ d.coverage.get('status', '—') }}{% endif %}</p>
+    </div>
+    {% endif %}
+
+    {% for sev in order %}
+      {% if groups[sev] %}
+      <h2 style="margin:34px 0 12px;font-size:20px">
+        <span class="sev {{ sev }}">{{ sev }}</span>
+        <span style="color:var(--muted);font-weight:500;font-size:14px;margin-left:8px">{{ groups[sev]|length }} шт.</span>
+      </h2>
+      {% for f in groups[sev] %}
+      <details>
+        <summary>
+          <span class="sev {{ sev }}">{{ f.rule_id }}</span>
+          <span style="flex:1">{{ f.title }}</span>
+          <span style="font:12px/1 var(--mono);color:var(--muted)">{{ f.file }}:{{ f.line }}</span>
+        </summary>
+        <div style="display:grid;gap:8px;font-size:14px">
+          <div style="color:var(--muted)">{{ f.description }}</div>
+          {% if f.evidence %}<div><span style="color:var(--muted)">Что видно:</span> {{ f.evidence }}</div>{% endif %}
+          {% if f.matched_text %}<pre style="margin:0;background:#0a0c12;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font:12.5px/1.5 var(--mono);color:#d7def0">{{ f.matched_text }}</pre>{% endif %}
+          <div class="row" style="gap:8px">
+            <span class="badge">confidence: {{ f.confidence }}</span>
+            {% if f.cwe %}<span class="badge">CWE: {{ f.cwe|join(', ') }}</span>{% endif %}
+            {% if f.mitre %}<span class="badge">MITRE: {{ f.mitre|map(attribute='id')|join(', ') }}</span>{% endif %}
+          </div>
+          {% if f.remediation %}<div style="border-left:2px solid var(--acc2);padding-left:12px;color:#cfe9d9"><b>Как исправить:</b> {{ f.remediation }}</div>{% endif %}
+        </div>
+      </details>
+      {% endfor %}
+      {% endif %}
+    {% endfor %}
+
+    <div class="card" style="margin-top:34px">
+      <h3>Нужен разбор и фиксы?</h3>
+      <p style="margin:6px 0 14px">Покажу, что закрывать первым, и проверю повторно после правок.</p>
+      <div class="row">
+        <a class="btn pri" href="#scan">Написать</a>
+        <a class="btn" href="#pricing">Тарифы</a>
+      </div>
+    </div>
+
+    <p style="color:var(--muted);font-size:12.5px;margin-top:22px;max-width:75ch">
+      Veyra — детерминированный статический анализатор. Код не исполнялся, сетевые запросы при сканировании не выполнялись.
+      Отчёт — основание для ручной проверки, а не окончательный вердикт и не гарантия безопасности.
+      Ссылка на отчёт живёт 24 часа.
+    </p>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Veyra Audit — проверка AI-агентов до подключения{% endblock %}</title>
+<style>
+  :root{
+    --bg:#08090e; --bg2:#0d0f16; --panel:#11141d; --panel2:#161a25;
+    --line:#232838; --line2:#30384d;
+    --fg:#eef1f8; --muted:#9aa4bd;
+    --acc:#a78bfa; --acc2:#4ade80; --warn:#fbbf24; --bad:#fb7185;
+    --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, monospace;
+    --sans: ui-sans-serif, -apple-system, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:var(--acc);text-decoration:none}
+  a:hover{color:#c4b1ff}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+  .glow{position:fixed;inset:0;pointer-events:none;z-index:0;background:
+      radial-gradient(900px 460px at 12% -8%, rgba(167,139,250,.22), transparent 60%),
+      radial-gradient(760px 420px at 92% 4%, rgba(74,222,128,.12), transparent 62%);}
+  .grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+      background-image:linear-gradient(rgba(255,255,255,.032) 1px,transparent 1px),
+                       linear-gradient(90deg,rgba(255,255,255,.032) 1px,transparent 1px);
+      background-size:64px 64px;mask-image:radial-gradient(70% 55% at 50% 0%,#000 20%,transparent 100%)}
+  header{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);background:rgba(8,9,14,.72);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;gap:16px;height:62px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:750;letter-spacing:-.02em;font-size:16px}
+  .logo .mark{width:28px;height:28px;border-radius:9px;background:linear-gradient(140deg,var(--acc),#6366f1);
+      display:grid;place-items:center;font-size:14px;color:#0b0d13;box-shadow:0 6px 22px -8px var(--acc)}
+  .nav .links{display:flex;gap:18px;margin-left:18px}
+  .nav .links a{color:var(--muted);font-size:14px;font-weight:520}
+  .nav .links a:hover{color:var(--fg)}
+  .nav .sp{flex:1}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:11px;padding:11px 18px;font-weight:640;font-size:14px;
+      border:1px solid var(--line2);background:var(--panel2);color:var(--fg);cursor:pointer;transition:.16s ease;text-decoration:none}
+  .btn:hover{transform:translateY(-1px);border-color:#46506b}
+  .btn.pri{background:linear-gradient(135deg,var(--acc),#7c6cf6);border-color:transparent;color:#0a0b10;box-shadow:0 14px 34px -16px var(--acc)}
+  .btn.pri:hover{box-shadow:0 18px 40px -16px var(--acc)}
+  .btn.sm{padding:8px 13px;font-size:13px;border-radius:9px}
+
+  section{position:relative;z-index:1}
+  .hero{padding:78px 0 40px}
+  .kicker{display:inline-flex;align-items:center;gap:8px;font:12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;
+      color:var(--acc2);border:1px solid rgba(74,222,128,.28);background:rgba(74,222,128,.07);padding:8px 12px;border-radius:999px}
+  h1{font-size:clamp(34px,5.4vw,60px);line-height:1.03;letter-spacing:-.045em;margin:20px 0 16px;max-width:21ch;text-wrap:balance}
+  h1 em{font-style:normal;background:linear-gradient(100deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lead{color:var(--muted);font-size:17px;max-width:56ch;margin:0 0 26px}
+  .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:38px;align-items:start}
+  .card{background:linear-gradient(170deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:20px;padding:22px}
+  .card h3{margin:0 0 6px;font-size:16px;letter-spacing:-.01em}
+  .card p{margin:0;color:var(--muted);font-size:14px}
+  .upload label{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;font-family:var(--mono)}
+  .drop{border:1.5px dashed var(--line2);border-radius:14px;padding:22px;text-align:center;color:var(--muted);font-size:14px;
+      background:rgba(255,255,255,.018);cursor:pointer;transition:.18s ease;position:relative}
+  .drop:hover,.drop.on{border-color:var(--acc);background:rgba(167,139,250,.07);color:var(--fg)}
+  .drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .drop b{color:var(--fg)}
+  .micro{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.5}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .chip{font:12px/1 var(--mono);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:7px 11px;background:rgba(255,255,255,.02)}
+
+  h2{font-size:clamp(24px,3.2vw,34px);letter-spacing:-.03em;margin:0 0 10px}
+  .sub{color:var(--muted);margin:0 0 26px;max-width:62ch}
+  .pad{padding:56px 0}
+  .cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .cols2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .feat .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.25);margin-bottom:12px;font-size:15px}
+  .steps{counter-reset:s;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .step{position:relative;padding-top:42px}
+  .step:before{counter-increment:s;content:"0" counter(s);position:absolute;top:0;left:0;font:700 13px/1 var(--mono);color:var(--acc);
+      border:1px solid rgba(167,139,250,.3);background:rgba(167,139,250,.08);padding:9px 10px;border-radius:8px}
+  .price{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .plan{display:flex;flex-direction:column;gap:12px}
+  .plan.hot{border-color:rgba(167,139,250,.5);box-shadow:0 30px 70px -40px var(--acc)}
+  .plan .tag{font:11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--acc2)}
+  .plan .num{font-size:34px;font-weight:780;letter-spacing:-.04em}
+  .plan .num small{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0}
+  .plan ul{margin:0;padding-left:18px;color:var(--muted);font-size:14px;display:grid;gap:7px}
+  .plan .btn{margin-top:auto;justify-content:center}
+
+  details{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--panel);margin-bottom:10px}
+  details summary{cursor:pointer;font-weight:600;list-style:none;display:flex;align-items:center;gap:10px}
+  details summary::-webkit-details-marker{display:none}
+  details[open] summary{margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:10px}
+  .faq p{margin:0;color:var(--muted);font-size:14px}
+
+  footer{border-top:1px solid var(--line);padding:26px 0;color:var(--muted);font-size:12.5px;position:relative;z-index:1}
+  .row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .badge{font:11px/1 var(--mono);padding:5px 8px;border-radius:6px;border:1px solid var(--line2);color:var(--muted)}
+  .sev{font:11px/1 var(--mono);font-weight:700;padding:5px 8px;border-radius:6px;letter-spacing:.05em}
+  .sev.CRITICAL{background:rgba(251,113,133,.16);color:#ff9aab;border:1px solid rgba(251,113,133,.4)}
+  .sev.HIGH{background:rgba(251,146,60,.14);color:#ffb27a;border:1px solid rgba(251,146,60,.36)}
+  .sev.MEDIUM{background:rgba(251,191,36,.13);color:#fcd34d;border:1px solid rgba(251,191,36,.34)}
+  .sev.LOW{background:rgba(148,163,184,.13);color:#c3ccdd;border:1px solid rgba(148,163,184,.3)}
+  .err{border:1px solid rgba(251,113,133,.45);background:rgba(251,113,133,.09);color:#ffb3bd;padding:12px 14px;border-radius:12px;margin-bottom:14px;font-size:14px}
+
+  @media(max-width:900px){
+    .hero-grid,.cols3,.cols2,.price,.steps{grid-template-columns:1fr}
+    .nav .links{display:none}
+    .hero{padding:46px 0 22px}
+  }
+</style>
+</head>
+<body>
+<div class="glow"></div><div class="grid-bg"></div>
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="{{ url_for('index') }}"><span class="mark">◈</span> Veyra <span style="color:var(--muted);font-weight:500">Audit</span></a>
+    <div class="links">
+      <a href="#checks">Что проверяем</a>
+      <a href="#how">Как работает</a>
+      <a href="#pricing">Тарифы</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="sp"></div>
+    <a class="btn sm" href="#scan">Связаться</a>
+    <a class="btn sm pri" href="#scan">Проверить агента</a>
+  </div>
+</header>
+{% block content %}{% endblock %}
+<footer>
+  <div class="wrap row" style="justify-content:space-between">
+    <div>Veyra Audit · статический анализ AI-агентов · 2026</div>
+    <div class="row">
+      <span class="badge">код не исполняется</span>
+      <span class="badge">без сетевых запросов при скане</span>
+      <span class="badge">отчёт удаляется через 24 ч</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

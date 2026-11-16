@@ -1,0 +1,16 @@
+services:
+  web:
+    build: .
+    image: veyra-audit:0.1.0
+    container_name: veyra_audit_web
+    ports:
+      - "8090:8090"
+    environment:
+      AUDIT_STORAGE: /data
+      AUDIT_RATE_LIMIT: "6"
+    volumes:
+      - audit_data:/data
+    restart: unless-stopped
+
+volumes:
+  audit_data:

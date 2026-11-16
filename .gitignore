@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.log
+.env
+
+# runtime data
+storage/
+samples/*.zip
+
+# OS
+.DS_Store
