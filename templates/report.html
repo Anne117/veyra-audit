@@ -9,24 +9,24 @@
         <h1 style="font-size:clamp(26px,3.6vw,40px);margin:10px 0 6px">Отчёт аудита</h1>
         <p class="sub" style="margin:0">
           {{ d.source_name }} · scan <code style="font-family:var(--mono);color:var(--muted)">{{ d.scan_id }}</code> ·
-          {{ d.elapsed_ms }} мс · {{ d.findings|length }} находок
+          {{ d.elapsed_ms }} мс · {{ shown_count }} находок
         </p>
       </div>
       <div class="row">
-        <a class="btn sm" href="{{ url_for('report_md', scan_id=d.scan_id) }}">↓ Markdown</a>
+        <a class="btn sm" href="{{ url_for('report_md', scan_id=d.scan_id) }}{% if include_docs %}?docs=1{% endif %}">↓ Markdown</a>
         <a class="btn sm" href="{{ url_for('report_json', scan_id=d.scan_id) }}">↓ JSON</a>
       </div>
     </div>
 
-    {% set rl = d.risk_level %}
-    {% set pct = d.score if d.score <= 100 else 100 %}
+    {% set rl = risk %}
+    {% set pct = score if score <= 100 else 100 %}
     <div class="hero-grid" style="grid-template-columns:340px 1fr;gap:16px">
       <div class="card" style="display:flex;gap:20px;align-items:center">
         <div style="width:112px;height:112px;border-radius:50%;flex:0 0 112px;position:relative;
              background:conic-gradient({% if rl=='CRITICAL' %}#fb7185{% elif rl=='HIGH' %}#fb923c{% elif rl=='MEDIUM' %}#fbbf24{% elif rl=='LOW' %}#94a3b8{% else %}#4ade80{% endif %} {{ pct*3.6 }}deg, rgba(255,255,255,.07) 0);">
           <div style="position:absolute;inset:9px;border-radius:50%;background:var(--panel);display:grid;place-items:center;text-align:center">
             <div>
-              <div style="font-size:26px;font-weight:780;letter-spacing:-.03em;line-height:1">{{ d.score }}</div>
+              <div style="font-size:26px;font-weight:780;letter-spacing:-.03em;line-height:1">{{ score }}</div>
               <div style="font:10px/1 var(--mono);color:var(--muted);margin-top:4px">/100</div>
             </div>
           </div>
@@ -34,7 +34,9 @@
         <div>
           <div class="sev {{ rl }}" style="display:inline-block;margin-bottom:8px">{{ rl }}</div>
           <div style="font-weight:650;font-size:15px">Оценка риска</div>
-          <div style="color:var(--muted);font-size:12.5px;margin-top:2px">чем выше — тем хуже</div>
+          <div style="color:var(--muted);font-size:12.5px;margin-top:2px">
+            {% if include_docs %}код + документация{% else %}только код и конфиги{% endif %}
+          </div>
           {% if d.policy_status %}<div style="margin-top:10px;font:11px/1 var(--mono);color:var(--muted)">policy: {{ d.policy_status }}</div>{% endif %}
         </div>
       </div>
@@ -45,18 +47,31 @@
           {% for sev in order %}
           <div style="border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.02)">
             <div class="sev {{ sev }}" style="display:inline-block">{{ sev }}</div>
-            <div style="font-size:24px;font-weight:750;letter-spacing:-.03em;margin-top:8px">{{ groups[sev]|length }}</div>
+            <div style="font-size:24px;font-weight:750;letter-spacing:-.03em;margin-top:8px">{{ counts[sev] }}</div>
           </div>
           {% endfor %}
         </div>
-        {% if d.counts %}<div style="color:var(--muted);font-size:12.5px;margin-top:12px">Всего: {{ d.findings|length }}{% if d.counts.get('suppressed') %} · подавлено: {{ d.counts['suppressed'] }}{% endif %}</div>{% endif %}
-        <div class="row" style="gap:8px;margin-top:10px">
-          <span class="badge">в коде и конфигах: {{ d.code_findings|default(0) }}</span>
-          <span class="badge">в документации: {{ d.doc_findings|default(0) }}</span>
+        <div style="color:var(--muted);font-size:12.5px;margin-top:12px">В оценке: {{ shown_count }}{% if docs_count %} · документация отдельно: {{ docs_count }}{% endif %}</div>
+        <div class="row" style="gap:8px;margin-top:12px">
+          {% if include_docs %}
+            <a class="btn sm" href="{{ url_for('report', scan_id=d.scan_id) }}">Только код и конфиги</a>
+          {% else %}
+            <a class="btn sm ghost" href="{{ url_for('report', scan_id=d.scan_id, docs=1) }}">Добавить документацию в оценку</a>
+          {% endif %}
         </div>
-        {% if d.findings and d.code_findings|default(0) == 0 %}
+        {% if counts['CRITICAL'] == 0 and counts['HIGH'] == 0 and shown_count > 0 %}
+        <div style="margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(74,222,128,.3);background:rgba(74,222,128,.07);color:#9ff0c0;font-size:12.5px">
+          Ни одной находки CRITICAL или HIGH. Всё найденное — MEDIUM: типовые сетевые вызовы скриптов.
+        </div>
+        {% endif %}
+        {% if raw >= 100 %}
         <div style="margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.08);color:#fcd34d;font-size:12.5px">
-          Все находки — в markdown-документации: это примеры команд, а не исполняемый код. Проверяй их как инструкции, а не как уязвимости.
+          Потолок шкалы: сырая сумма весов {{ raw }}. 100/100 значит «потолок достигнут», а не «в сто раз хуже».
+        </div>
+        {% endif %}
+        {% if docs_count and not include_docs %}
+        <div style="margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.02);color:var(--muted);font-size:12.5px">
+          Находки в markdown ({{ docs_count }}) не входят в оценку: это примеры команд и описания, а не исполняемый код. <a href="{{ url_for('report', scan_id=d.scan_id, docs=1) }}">Показать всё равно</a>.
         </div>
         {% endif %}
       </div>
@@ -72,12 +87,12 @@
     </div>
     {% endif %}
 
-    {% if d.findings|length == 0 %}
+    {% if shown_count == 0 %}
     <div class="card" style="margin-top:16px;text-align:center;padding:40px">
       <div style="font-size:30px;margin-bottom:8px">⛨</div>
       <h3>Известных паттернов не найдено</h3>
       <p style="max-width:52ch;margin:8px auto 0">Это значит «не найдено известных проблем», а не «абсолютно безопасно».
-      {% if d.coverage %}Покрытие: {{ d.coverage.get('status', '—') }}{% endif %}</p>
+      {% if docs_count %}<br>В документации при этом есть {{ docs_count }} совпадений — они не входят в оценку.{% endif %}</p>
     </div>
     {% endif %}
 
@@ -92,6 +107,7 @@
         <summary>
           <span class="sev {{ sev }}">{{ f.rule_id }}</span>
           <span style="flex:1">{{ f.title }}</span>
+          {% if f._doc %}<span class="badge" style="border-color:rgba(251,191,36,.45);color:#fcd34d">документация</span>{% endif %}
           <span style="font:12px/1 var(--mono);color:var(--muted)">{{ f.file }}:{{ f.line }}</span>
         </summary>
         <div style="display:grid;gap:8px;font-size:14px">
@@ -114,8 +130,8 @@
       <h3>Нужен разбор и фиксы?</h3>
       <p style="margin:6px 0 14px">Покажу, что закрывать первым, и проверю повторно после правок.</p>
       <div class="row">
-        <a class="btn pri" href="#scan">Написать</a>
-        <a class="btn" href="#pricing">Тарифы</a>
+        <a class="btn pri" href="#scan">Оставить заявку</a>
+        <a class="btn" href="{{ url_for('index') }}#pricing">Тарифы</a>
       </div>
     </div>
 

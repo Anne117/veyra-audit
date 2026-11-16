@@ -10,7 +10,7 @@ from pathlib import Path
 from flask import Flask, abort, redirect, render_template, request, send_file, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from .report import group_findings, to_markdown
+from .report import group_findings, split_docs, to_markdown
 from .scanner import ScanError, cleanup_old, run_scan
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -76,15 +76,29 @@ def scan():
 @app.get("/r/<scan_id>")
 def report(scan_id: str):
     d = _load(scan_id)
-    groups = group_findings(d.get("findings", []))
-    return render_template("report.html", d=d, groups=groups, order=["CRITICAL", "HIGH", "MEDIUM", "LOW"])
+    include_docs = request.args.get("docs") == "1"
+    code, docs = split_docs(d.get("findings", []))
+    for f in code:
+        f["_doc"] = False
+    for f in docs:
+        f["_doc"] = True
+    shown = d.get("findings", []) if include_docs else code
+    groups = group_findings(shown)
+    counts = {s: len(groups.get(s, [])) for s in ("CRITICAL", "HIGH", "MEDIUM", "LOW")}
+    return render_template(
+        "report.html", d=d, groups=groups, counts=counts, shown_count=len(shown),
+        docs_count=len(docs), include_docs=include_docs,
+        score=(d.get("score_all", 0) if include_docs else d.get("score_code", 0)),
+        risk=(d.get("risk_all", "—") if include_docs else d.get("risk_code", "—")),
+        raw=(d.get("weight_all", 0) if include_docs else d.get("weight_code", 0)),
+        order=["CRITICAL", "HIGH", "MEDIUM", "LOW"])
 
 
 @app.get("/r/<scan_id>.md")
 def report_md(scan_id: str):
     d = _load(scan_id)
     p = STORAGE / f"{scan_id}.md"
-    p.write_text(to_markdown(d))
+    p.write_text(to_markdown(d, include_docs=request.args.get("docs") == "1"))
     return send_file(p, as_attachment=True, download_name=f"veyra-audit-{scan_id}.md", mimetype="text/markdown")
 
 

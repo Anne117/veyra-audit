@@ -17,6 +17,8 @@ import uuid
 import zipfile
 from pathlib import Path
 
+from .report import is_doc
+
 VEYRA_SRC = os.environ.get("VEYRA_SRC", "/home/ubuntu/veyra/src")
 WORK_ROOT = Path(os.environ.get("AUDIT_WORK_ROOT", "/tmp/veyra-audit"))
 
@@ -34,6 +36,29 @@ TEXT_EXT = {
 
 class ScanError(Exception):
     pass
+
+
+# те же веса, что в Veyra (src/veyra/models.py): сумма с потолком 100
+WEIGHTS = {"CRITICAL": 40, "HIGH": 25, "MEDIUM": 10, "LOW": 3, "INFO": 0}
+
+
+def _score(findings: list[dict]) -> tuple[int, int]:
+    """Возвращает (score с потолком, сырую сумму весов)."""
+    raw = sum(WEIGHTS.get((f.get("severity") or "").upper(), 0)
+              for f in findings if not f.get("suppressed"))
+    return min(raw, 100), raw
+
+
+def _risk_level(score: int) -> str:
+    if score >= 80:
+        return "CRITICAL"
+    if score >= 50:
+        return "HIGH"
+    if score >= 25:
+        return "MEDIUM"
+    if score >= 5:
+        return "LOW"
+    return "SAFE"
 
 
 def _safe_extract(zf: zipfile.ZipFile, dest: Path) -> int:
@@ -135,10 +160,20 @@ def run_scan(archive: bytes, filename: str = "upload.zip") -> dict:
                           for k in ("critical", "high", "medium", "low")}
         # Отделяем находки в документации от находок в коде и конфигах:
         # пример команды в README — не то же самое, что исполняемый скрипт.
-        doc_ext = (".md", ".txt", ".rst")
-        data["doc_findings"] = sum(1 for f in data.get("findings", [])
-                                   if str(f.get("file", "")).lower().endswith(doc_ext))
-        data["code_findings"] = len(data.get("findings", [])) - data["doc_findings"]
+        findings = data.get("findings", [])
+        docs = [f for f in findings if is_doc(f)]
+        code = [f for f in findings if not is_doc(f)]
+        data["doc_findings"] = len(docs)
+        data["code_findings"] = len(code)
+
+        # Оценку считаем отдельно по коду и отдельно по документации:
+        # пример команды в README не должен переводить проект в CRITICAL.
+        data["score_code"], data["weight_code"] = _score(code)
+        data["score_all"], data["weight_all"] = _score(findings)
+        data["risk_code"] = _risk_level(data["score_code"])
+        data["risk_all"] = _risk_level(data["score_all"])
+        data["capped_code"] = data["weight_code"] >= 100
+        data["capped_all"] = data["weight_all"] >= 100
         return data
     finally:
         shutil.rmtree(work, ignore_errors=True)

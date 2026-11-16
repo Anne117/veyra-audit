@@ -74,7 +74,8 @@ def summary_text(d: dict) -> str:
     top = [f for f in d.get("findings", []) if f.get("severity") in ("CRITICAL", "HIGH")][:3]
     lines = [
         f"<b>Отчёт готов</b> · <code>{d['scan_id']}</code>",
-        f"Оценка риска: <b>{d.get('score', 0)}/100</b> · <b>{d.get('risk_level')}</b>",
+        f"Оценка риска (код и конфиги): <b>{d.get('score_code', 0)}/100</b> · <b>{d.get('risk_code')}</b>",
+        f"Документация отдельно: {d.get('doc_findings', 0)} находок (в оценку не входят)",
         f"CRITICAL {c.get('critical', 0)} · HIGH {c.get('high', 0)} · "
         f"MEDIUM {c.get('medium', 0)} · LOW {c.get('low', 0)}",
         "",
