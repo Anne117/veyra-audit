@@ -42,7 +42,7 @@
             сумма весов даёт {{ bucket }} — это объём находок, не тяжесть
           </div>
           {% endif %}
-          {% if d.policy_status %}<div style="margin-top:10px;font:11px/1 var(--mono);color:var(--muted)">policy: {{ d.policy_status }}</div>{% endif %}
+          <div style="margin-top:10px;font:11px/1 var(--mono);color:var(--muted)" title="считается по находкам в текущем режиме">policy: {{ policy }}</div>
         </div>
       </div>
 

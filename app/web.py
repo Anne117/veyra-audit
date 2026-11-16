@@ -92,6 +92,7 @@ def report(scan_id: str):
         risk=(d.get("risk_all", "—") if include_docs else d.get("risk_code", "—")),
         raw=(d.get("weight_all", 0) if include_docs else d.get("weight_code", 0)),
         bucket=(d.get("bucket_all", "—") if include_docs else d.get("bucket_code", "—")),
+        policy=("FAIL" if (counts["CRITICAL"] or counts["HIGH"]) else "PASS"),
         order=["CRITICAL", "HIGH", "MEDIUM", "LOW"])
 
 
