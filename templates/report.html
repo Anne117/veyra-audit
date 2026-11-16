@@ -50,6 +50,15 @@
           {% endfor %}
         </div>
         {% if d.counts %}<div style="color:var(--muted);font-size:12.5px;margin-top:12px">Всего: {{ d.findings|length }}{% if d.counts.get('suppressed') %} · подавлено: {{ d.counts['suppressed'] }}{% endif %}</div>{% endif %}
+        <div class="row" style="gap:8px;margin-top:10px">
+          <span class="badge">в коде и конфигах: {{ d.code_findings|default(0) }}</span>
+          <span class="badge">в документации: {{ d.doc_findings|default(0) }}</span>
+        </div>
+        {% if d.findings and d.code_findings|default(0) == 0 %}
+        <div style="margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.08);color:#fcd34d;font-size:12.5px">
+          Все находки — в markdown-документации: это примеры команд, а не исполняемый код. Проверяй их как инструкции, а не как уязвимости.
+        </div>
+        {% endif %}
       </div>
     </div>
 

@@ -117,12 +117,14 @@ def run_scan(archive: bytes, filename: str = "upload.zip") -> dict:
             [sys.executable, "-m", "veyra.cli", "scan", str(work), "--format", "json"],
             capture_output=True, text=True, timeout=SCAN_TIMEOUT, env=env,
         )
-        if proc.returncode not in (0, 1):
-            raise ScanError(f"сканер завершился с кодом {proc.returncode}: {proc.stderr[-300:]}")
+        # Veyra: 0 = чисто, 1 = находки >= порога, 2 = есть CRITICAL.
+        # Это коды вердикта, а не сбоя — JSON на stdout есть во всех трёх случаях.
         try:
             data = json.loads(proc.stdout)
         except json.JSONDecodeError:
-            raise ScanError("сканер вернул не JSON — проверь версию Veyra")
+            raise ScanError(
+                f"сканер завершился с кодом {proc.returncode}: {proc.stderr[-300:] or 'пустой ответ'}"
+            )
 
         data = _strip_paths(data, work)
         data["scan_id"] = scan_id
@@ -131,6 +133,12 @@ def run_scan(archive: bytes, filename: str = "upload.zip") -> dict:
         data["agent_roots"] = roots
         data["counts"] = {k: len([f for f in data.get("findings", []) if f.get("severity") == k.upper()])
                           for k in ("critical", "high", "medium", "low")}
+        # Отделяем находки в документации от находок в коде и конфигах:
+        # пример команды в README — не то же самое, что исполняемый скрипт.
+        doc_ext = (".md", ".txt", ".rst")
+        data["doc_findings"] = sum(1 for f in data.get("findings", [])
+                                   if str(f.get("file", "")).lower().endswith(doc_ext))
+        data["code_findings"] = len(data.get("findings", [])) - data["doc_findings"]
         return data
     finally:
         shutil.rmtree(work, ignore_errors=True)
