@@ -1,57 +1,42 @@
 # Veyra Audit
 
-**Платный статический аудит AI-агентов: проверь, что умеет агент, до того как он получит доступ.**
+**Static security review for AI agents — check what an agent can do before it gets access.**
 
 [![Python](https://img.shields.io/badge/python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-a78bfa.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-beta-fbbf24.svg)](#ограничения)
+[![License: PolyForm NC](https://img.shields.io/badge/license-PolyForm%20Noncommercial-a78bfa.svg)](LICENSE)
+[![Commercial](https://img.shields.io/badge/commercial-license%20available-4ade80.svg)](COMMERCIAL.md)
+[![Status](https://img.shields.io/badge/status-beta-fbbf24.svg)](#limitations)
 
-![Лендинг Veyra Audit](docs/landing.png)
+![Veyra Audit landing](docs/landing.png)
 
-Сервис принимает zip со скиллами, промптами и MCP-конфигами агента и отдаёт
-отчёт: что агент читает, куда отправляет данные, какие команды выполняет и
-какие цепочки складываются в атаку. С оценкой риска, файлом и строкой,
-доказательством, CWE/MITRE и приоритетом фиксов.
+Veyra Audit takes a zip with an agent's skills, prompts and MCP configs and
+returns a report: what the agent reads, where it sends data, which commands it
+runs, and how those pieces chain into an attack path — with risk level,
+`file:line`, evidence, CWE/MITRE mapping and fix priorities.
 
-Движок — [Veyra](https://github.com/Anne117/veyra): детерминированный
-статический анализатор. Код из архива **не исполняется**, сетевые запросы при
-сканировании **не выполняются**.
+The engine is [Veyra](https://github.com/Anne117/veyra): a deterministic static
+analyser. Scanned code is **never executed**, and **no network requests** are
+made during a scan.
 
 ---
 
-## Что находит
+## What it finds
 
-| Класс | Примеры |
+| Class | Examples |
 |---|---|
-| 🔑 Секреты в коде | токены, пароли и ключи, зашитые в скиллы и конфиги |
-| 📡 Эксфильтрация | чтение `.env`, `~/.ssh`, `~/.aws` и отправка наружу |
-| ⚡ Опасные команды | `curl \| bash`, `eval`, запуск скачанного кода |
-| 🧠 Prompt injection | инструкции, переопределяющие системный промпт |
-| 🔌 MCP-серверы | удалённые endpoint'ы, динамическая установка пакетов, широкий доступ к ФС |
-| 🕸️ Цепочки атак | как безобидные по отдельности компоненты складываются в путь до утечки |
+| 🔑 Secrets in code | tokens, passwords and keys hardcoded in skills and configs |
+| 📡 Exfiltration | reading `.env`, `~/.ssh`, `~/.aws` and sending it out |
+| ⚡ Dangerous commands | `curl \| bash`, `eval`, running downloaded code |
+| 🧠 Prompt injection | instructions that override the system prompt |
+| 🔌 Risky MCP servers | remote endpoints, dynamic package installs, broad filesystem access |
+| 🕸️ Attack chains | how harmless-looking components add up to a path to data loss |
 
-![Отчёт](docs/report.png)
-
----
-
-## Как работает
-
-```mermaid
-flowchart LR
-    A[zip с агентом] --> B[безопасная распаковка]
-    B --> C[Veyra: парсинг + правила]
-    C --> D[граф компонентов]
-    D --> E[анализ путей атаки]
-    E --> F[оценка риска и evidence]
-    F --> G[отчёт HTML / Markdown / JSON]
-```
-
-Одинаковый вход даёт одинаковый отчёт: в решениях нет LLM.
+![Report](docs/report.png)
 
 ---
 
-## Быстрый старт
+## Quick start
 
 ### Docker
 
@@ -62,115 +47,125 @@ docker compose up -d --build
 open http://localhost:8090
 ```
 
-### Локально
+### Local
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/gunicorn --workers 1 --threads 4 --timeout 300 --bind 127.0.0.1:8090 app.web:app
+.venv/bin/gunicorn --workers 1 --threads 4 --timeout 300 \
+  --bind 127.0.0.1:8090 app.web:app
 ```
 
-Проверка: `curl http://127.0.0.1:8090/healthz` → `{"status":"ok"}`.
+Health check: `curl http://127.0.0.1:8090/healthz` → `{"status":"ok"}`.
 
-### Переменные окружения
+### Use it as an agent skill
 
-| Переменная | По умолчанию | Назначение |
-|---|---|---|
-| `AUDIT_STORAGE` | `./storage` | где лежат отчёты (JSON/MD, TTL 24 ч) |
-| `AUDIT_RATE_LIMIT` | `6` | сканов в час с одного IP |
-| `VEYRA_SRC` | `../veyra/src` | путь к исходникам Veyra (если не установлена пакетом) |
-| `PORT` | `8090` | порт dev-сервера |
-| `BOT_TOKEN` | — | токен Telegram-бота |
-| `PUBLIC_BASE` | — | публичный URL для ссылок из бота |
-
----
-
-## Маршруты
-
-| Метод | Путь | Что делает |
-|---|---|---|
-| `GET` | `/` | лендинг с тарифами и формой загрузки |
-| `POST` | `/scan` | принимает `.zip`, запускает скан, редиректит на отчёт |
-| `GET` | `/r/<id>` | HTML-отчёт |
-| `GET` | `/r/<id>.md` | Markdown-отчёт |
-| `GET` | `/r/<id>.json` | сырой JSON Veyra |
-| `GET` | `/healthz` | health-check |
-
----
-
-
-## Оценка и документация
-
-Оценка риска считается **по коду и конфигам**. Находки в `*.md`, `*.txt`, `*.rst`
-показываются отдельно и в оценку не входят: пример команды в README — это
-инструкция для человека, а не исполняемый скрипт.
-
-- в отчёте есть переключатель «добавить документацию в оценку» (`?docs=1`);
-- коррелированные находки (`file="<correlated>"`) наследуют тип источника:
-  если цепочка собрана целиком из markdown, она считается документацией;
-- шкала имеет потолок: score = min(сумма весов, 100), веса 40/25/10/3.
-  Поэтому 100/100 означает «потолок достигнут»; рядом показывается сырая сумма.
-
-## Модель безопасности
-
-- архив ≤ **8 МБ**, распакованного ≤ **48 МБ**, файлов ≤ **3000**;
-- symlink'и игнорируются, `..` и абсолютные пути отклоняются;
-- распакованный код **не исполняется** — только чтение и разбор;
-- архив удаляется сразу после скана, отчёт живёт **24 часа**;
-- ссылка на отчёт — случайный ID, без перебора;
-- rate limit: 6 сканов в час с IP (веб), 3 в сутки на пользователя (бот);
-- `.git`, `node_modules`, `.venv`, `dist`, `build` не сканируются.
-
----
-
-## Telegram-бот
+The repo ships a ready-to-load skill at [`skills/veyra-audit/SKILL.md`](skills/veyra-audit/SKILL.md).
+Copy it into your agent's skills directory (for Hermes: `~/.hermes/skills/security/veyra-audit/`)
+and the agent will know when and how to run an audit.
 
 ```bash
-export BOT_TOKEN=<токен от @BotFather>
+mkdir -p ~/.hermes/skills/security/veyra-audit
+cp skills/veyra-audit/SKILL.md ~/.hermes/skills/security/veyra-audit/
+```
+
+---
+
+## How scoring works
+
+Two independent numbers, deliberately separated:
+
+- **Risk level** — the most severe finding in scope (`CRITICAL` → `SAFE`).
+- **Volume** — weighted sum of findings, capped at 100 (weights: 40 / 25 / 10 / 3).
+  Twenty MEDIUMs can reach 100 without anything being critical; the UI says so
+  explicitly.
+
+**Documentation is out of scope by default.** Findings in `*.md`, `*.txt`,
+`*.rst` are command examples and prose, not executable code. They are listed
+separately and can be included in the score with `?docs=1`. Correlated findings
+(`file="<correlated>"`) inherit the type of their contributing sources.
+
+---
+
+## Routes
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/` | landing page with pricing and the upload form |
+| `POST` | `/scan` | accepts `.zip`, runs the scan, redirects to the report |
+| `GET` | `/r/<id>` | HTML report (`?docs=1` includes documentation) |
+| `GET` | `/r/<id>.md` | Markdown report |
+| `GET` | `/r/<id>.json` | raw Veyra JSON |
+| `GET` | `/healthz` | health check |
+
+---
+
+## Security model
+
+- archive ≤ **8 MB**, unpacked ≤ **48 MB**, at most **3000** files;
+- symlinks are skipped, `..` and absolute paths are rejected;
+- unpacked code is **never executed** — read and parse only;
+- the archive is deleted right after the scan, reports live **24 hours**;
+- report links use random IDs;
+- rate limit: 6 scans per hour per IP (web), 3 per day per user (bot);
+- `.git`, `node_modules`, `.venv`, `dist`, `build` are not scanned.
+
+---
+
+## Telegram bot
+
+```bash
+export BOT_TOKEN=<token from @BotFather>
 .venv/bin/python -m app.bot
 ```
 
-Принимает `.zip` файлом, отдаёт summary и полный Markdown-отчёт.
-Лимит бесплатных сканов — 3 в сутки на пользователя.
+Accepts a `.zip` file, returns a summary, the full Markdown report and a link
+to the web report. Free tier: 3 scans per day.
 
 ---
 
-## Тарифы
+## Licensing
 
-| Тариф | Цена | Что входит |
+**Free for personal and noncommercial use** under the
+[PolyForm Noncommercial License 1.0.0](LICENSE). That covers hobby projects,
+research, study, and charities.
+
+**Commercial use requires a paid license** — using it at a company, auditing
+client projects for money, embedding it in a product, or offering it as a
+hosted service. See [COMMERCIAL.md](COMMERCIAL.md).
+
+| Plan | Price | Included |
 |---|---|---|
-| Free | 0 ₽ | 3 скана в сутки, полный отчёт |
-| Разовый аудит | 4 900 ₽ | до 5 архивов, приоритизация, разбор 30 мин, повторный скан |
-| CI | 39 900 ₽/мес | безлимит, гейт по severity, SARIF, поддержка |
-
-Тексты для продаж — [`sales/copy.md`](sales/copy.md).
+| Personal | free | 3 scans per day, full report |
+| One-off audit | €490 / project | up to 5 archives, prioritisation, 30-min walkthrough, re-scan |
+| Team / CI | €3,900 / month | unlimited scans, severity gate, SARIF, support |
 
 ---
 
-## Ограничения
+## Limitations
 
-Честно, потому что это важно для продаж:
-
-- Veyra ищет **известные паттерны**, а не «всё»; false positives возможны;
-- это **не SAST** для обычного веб-кода — продукт про агентские артефакты;
-- это **не пентест** и не гарантия безопасности;
-- отчёт — основание для ручной проверки, а не окончательный вердикт;
-- «находок нет» означает «не найдено известных проблем» + покрытие скана.
+- Veyra finds **known patterns**, not everything; false positives are possible;
+- it is **not a SAST** for general web code — it is about agent artifacts;
+- it is **not a penetration test** and not a security guarantee;
+- the report is a basis for human review, not a final verdict;
+- "no findings" means "no known patterns found" plus a coverage statement.
 
 ---
 
-## Структура
+## Project layout
 
 ```
 veyra-audit/
 ├── app/
-│   ├── scanner.py   приём zip, безопасная распаковка, запуск Veyra
-│   ├── report.py    Markdown-отчёт
-│   ├── web.py       Flask: лендинг, /scan, /r/<id>
-│   └── bot.py       Telegram-бот (long polling)
+│   ├── scanner.py   zip intake, safe unpacking, Veyra invocation
+│   ├── report.py    Markdown report and finding helpers
+│   ├── i18n.py      RU/EN strings for the site
+│   ├── web.py       Flask: landing, /scan, /r/<id>
+│   └── bot.py       Telegram bot (long polling)
 ├── templates/       base / index / report
-├── sales/           тексты для продаж
-├── docs/            скриншоты
+├── skills/          agent skill (SKILL.md)
+├── sales/           outreach copy
+├── docs/            screenshots
 ├── requirements.txt
 ├── Dockerfile
 └── docker-compose.yml
@@ -178,6 +173,7 @@ veyra-audit/
 
 ---
 
-## Лицензия
+## License
 
-MIT — см. [LICENSE](LICENSE).
+PolyForm Noncommercial 1.0.0 — see [LICENSE](LICENSE). Commercial licensing:
+[COMMERCIAL.md](COMMERCIAL.md).

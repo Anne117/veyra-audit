@@ -85,19 +85,19 @@ def _safe_extract(zf: zipfile.ZipFile, dest: Path) -> int:
     for info in zf.infolist():
         entries += 1
         if entries > MAX_ENTRIES:
-            raise ScanError(f"слишком много файлов в архиве (>{MAX_ENTRIES})")
+            raise ScanError(f"too many files in the archive (>{MAX_ENTRIES})")
         name = info.filename
         if name.startswith("/") or ".." in Path(name).parts:
-            raise ScanError("небезопасный путь внутри архива")
+            raise ScanError("unsafe path inside the archive")
         target = (dest / name).resolve()
         if not str(target).startswith(str(dest.resolve())):
-            raise ScanError("небезопасный путь внутри архива")
+            raise ScanError("unsafe path inside the archive")
         mode = info.external_attr >> 16
         if (mode & 0o170000) == 0o120000:   # symlink
             continue
         total += info.file_size
         if total > MAX_UNPACKED:
-            raise ScanError("архив распаковывается больше допустимого")
+            raise ScanError("archive unpacks larger than allowed")
     zf.extractall(dest)
     return total
 
@@ -139,9 +139,9 @@ def _strip_paths(data: dict, root: Path) -> dict:
 
 def run_scan(archive: bytes, filename: str = "upload.zip") -> dict:
     if len(archive) > MAX_UPLOAD:
-        raise ScanError("файл больше 8 МБ")
+        raise ScanError("file is larger than 8 MB")
     if not zipfile.is_zipfile(__import__("io").BytesIO(archive)):
-        raise ScanError("нужен .zip с исходниками агента")
+        raise ScanError("a .zip with the agent sources is required")
 
     WORK_ROOT.mkdir(parents=True, exist_ok=True)
     scan_id = uuid.uuid4().hex[:12]
@@ -166,7 +166,7 @@ def run_scan(archive: bytes, filename: str = "upload.zip") -> dict:
             data = json.loads(proc.stdout)
         except json.JSONDecodeError:
             raise ScanError(
-                f"сканер завершился с кодом {proc.returncode}: {proc.stderr[-300:] or 'пустой ответ'}"
+                f"scanner exited with code {proc.returncode}: {proc.stderr[-300:] or 'empty output'}"
             )
 
         data = _strip_paths(data, work)

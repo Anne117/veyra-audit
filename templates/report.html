@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Отчёт {{ d.scan_id }} — Veyra Audit{% endblock %}
+{% block title %}{{ t('rep.title') }} {{ d.scan_id }} — Veyra Audit{% endblock %}
 {% block content %}
 <section class="pad" style="padding-top:40px">
   <div class="wrap">
     <div class="row" style="justify-content:space-between;margin-bottom:22px">
       <div>
-        <a href="{{ url_for('index') }}" style="font-size:13px">← новый скан</a>
-        <h1 style="font-size:clamp(26px,3.6vw,40px);margin:10px 0 6px">Отчёт аудита</h1>
+        <a href="{{ url_for('index') }}" style="font-size:13px">← {{ t('rep.back') }}</a>
+        <h1 style="font-size:clamp(26px,3.6vw,40px);margin:10px 0 6px">{{ t('rep.title') }}</h1>
         <p class="sub" style="margin:0">
           {{ d.source_name }} · scan <code style="font-family:var(--mono);color:var(--muted)">{{ d.scan_id }}</code> ·
-          {{ d.elapsed_ms }} мс · {{ shown_count }} находок
+          {{ d.elapsed_ms }} ms · {{ shown_count }} findings
         </p>
       </div>
       <div class="row">
@@ -27,27 +27,25 @@
           <div style="position:absolute;inset:9px;border-radius:50%;background:var(--panel);display:grid;place-items:center;text-align:center">
             <div>
               <div style="font-size:26px;font-weight:780;letter-spacing:-.03em;line-height:1">{{ score }}</div>
-              <div style="font:10px/1 var(--mono);color:var(--muted);margin-top:4px">/100 объём</div>
+              <div style="font:10px/1 var(--mono);color:var(--muted);margin-top:4px">/100 {{ t('rep.volume') }}</div>
             </div>
           </div>
         </div>
         <div>
           <div class="sev {{ rl }}" style="display:inline-block;margin-bottom:8px">{{ rl }}</div>
-          <div style="font-weight:650;font-size:15px">Уровень риска</div>
+          <div style="font-weight:650;font-size:15px">{{ t('rep.risk') }}</div>
           <div style="color:var(--muted);font-size:12.5px;margin-top:2px">
-            по самой тяжёлой находке · {% if include_docs %}код + документация{% else %}код и конфиги{% endif %}
+            {{ t('rep.risk.by') }} · {% if include_docs %}code + docs{% else %}code and configs{% endif %}
           </div>
           {% if bucket != rl %}
-          <div style="color:var(--muted);font-size:11.5px;margin-top:6px">
-            сумма весов даёт {{ bucket }} — это объём находок, не тяжесть
-          </div>
+          <div style="color:var(--muted);font-size:11.5px;margin-top:6px">{{ t('rep.volume.note', bucket=bucket) }}</div>
           {% endif %}
-          <div style="margin-top:10px;font:11px/1 var(--mono);color:var(--muted)" title="считается по находкам в текущем режиме">policy: {{ policy }}</div>
+          <div style="margin-top:10px;font:11px/1 var(--mono);color:var(--muted)">{{ t('rep.policy') }}: {{ policy }}</div>
         </div>
       </div>
 
       <div class="card">
-        <div style="font:12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Находки по severity</div>
+        <div style="font:12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">{{ t('rep.findings') }}</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
           {% for sev in order %}
           <div style="border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.02)">
@@ -56,27 +54,27 @@
           </div>
           {% endfor %}
         </div>
-        <div style="color:var(--muted);font-size:12.5px;margin-top:12px">В оценке: {{ shown_count }}{% if docs_count %} · документация отдельно: {{ docs_count }}{% endif %}</div>
+        <div style="color:var(--muted);font-size:12.5px;margin-top:12px">{{ t('rep.in_scope') }}: {{ shown_count }}{% if docs_count %} · {{ t('rep.docs_sep') }}: {{ docs_count }}{% endif %}</div>
         <div class="row" style="gap:8px;margin-top:12px">
           {% if include_docs %}
-            <a class="btn sm" href="{{ url_for('report', scan_id=d.scan_id) }}">Только код и конфиги</a>
+            <a class="btn sm" href="{{ url_for('report', scan_id=d.scan_id) }}">{{ t('rep.only_code') }}</a>
           {% else %}
-            <a class="btn sm ghost" href="{{ url_for('report', scan_id=d.scan_id, docs=1) }}">Добавить документацию в оценку</a>
+            <a class="btn sm ghost" href="{{ url_for('report', scan_id=d.scan_id, docs=1) }}">{{ t('rep.add_docs') }}</a>
           {% endif %}
         </div>
         {% if counts['CRITICAL'] == 0 and counts['HIGH'] == 0 and shown_count > 0 %}
         <div style="margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(74,222,128,.3);background:rgba(74,222,128,.07);color:#9ff0c0;font-size:12.5px">
-          Ни одной находки CRITICAL или HIGH. Всё найденное — MEDIUM: типовые сетевые вызовы скриптов.
+          {{ t('rep.no_crit') }}
         </div>
         {% endif %}
         {% if raw >= 100 %}
         <div style="margin-top:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.08);color:#fcd34d;font-size:12.5px">
-          Объём: сырая сумма весов {{ raw }}, шкала обрезана на 100. Это количество находок, а не тяжесть.
+          {{ t('rep.capped', raw=raw) }}
         </div>
         {% endif %}
         {% if docs_count and not include_docs %}
         <div style="margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.02);color:var(--muted);font-size:12.5px">
-          Находки в markdown ({{ docs_count }}) не входят в оценку: это примеры команд и описания, а не исполняемый код. <a href="{{ url_for('report', scan_id=d.scan_id, docs=1) }}">Показать всё равно</a>.
+          {{ t('rep.docs_note', n=docs_count) }} <a href="{{ url_for('report', scan_id=d.scan_id, docs=1) }}">{{ t('rep.show') }}</a>.
         </div>
         {% endif %}
       </div>
@@ -84,7 +82,7 @@
 
     {% if d.agent_roots %}
     <div class="card" style="margin-top:16px">
-      <h3 style="margin-bottom:8px">Что проверялось</h3>
+      <h3 style="margin-bottom:8px">{{ t('rep.checked') }}</h3>
       <div class="chips">
         {% for r in d.agent_roots[:24] %}<span class="chip">{{ r }}</span>{% endfor %}
         {% if d.agent_roots|length > 24 %}<span class="chip">+{{ d.agent_roots|length - 24 }}</span>{% endif %}
@@ -95,9 +93,9 @@
     {% if shown_count == 0 %}
     <div class="card" style="margin-top:16px;text-align:center;padding:40px">
       <div style="font-size:30px;margin-bottom:8px">⛨</div>
-      <h3>Известных паттернов не найдено</h3>
-      <p style="max-width:52ch;margin:8px auto 0">Это значит «не найдено известных проблем», а не «абсолютно безопасно».
-      {% if docs_count %}<br>В документации при этом есть {{ docs_count }} совпадений — они не входят в оценку.{% endif %}</p>
+      <h3>{{ t('rep.empty.t') }}</h3>
+      <p style="max-width:52ch;margin:8px auto 0">{{ t('rep.empty.d') }}
+      {% if docs_count %}<br>{{ t('rep.empty.docs', n=docs_count) }}{% endif %}</p>
     </div>
     {% endif %}
 
@@ -105,26 +103,26 @@
       {% if groups[sev] %}
       <h2 style="margin:34px 0 12px;font-size:20px">
         <span class="sev {{ sev }}">{{ sev }}</span>
-        <span style="color:var(--muted);font-weight:500;font-size:14px;margin-left:8px">{{ groups[sev]|length }} шт.</span>
+        <span style="color:var(--muted);font-weight:500;font-size:14px;margin-left:8px">{{ groups[sev]|length }}</span>
       </h2>
       {% for f in groups[sev] %}
       <details>
         <summary>
           <span class="sev {{ sev }}">{{ f.rule_id }}</span>
           <span style="flex:1">{{ f.title }}</span>
-          {% if f._doc %}<span class="badge" style="border-color:rgba(251,191,36,.45);color:#fcd34d">документация</span>{% endif %}
+          {% if f._doc %}<span class="badge" style="border-color:rgba(251,191,36,.45);color:#fcd34d">{{ t('rep.docs_badge') }}</span>{% endif %}
           <span style="font:12px/1 var(--mono);color:var(--muted)">{{ f.file }}:{{ f.line }}</span>
         </summary>
         <div style="display:grid;gap:8px;font-size:14px">
           <div style="color:var(--muted)">{{ f.description }}</div>
-          {% if f.evidence %}<div><span style="color:var(--muted)">Что видно:</span> {{ f.evidence }}</div>{% endif %}
+          {% if f.evidence %}<div><span style="color:var(--muted)">{{ t('rep.what') }}:</span> {{ f.evidence }}</div>{% endif %}
           {% if f.matched_text %}<pre style="margin:0;background:#0a0c12;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font:12.5px/1.5 var(--mono);color:#d7def0">{{ f.matched_text }}</pre>{% endif %}
           <div class="row" style="gap:8px">
-            <span class="badge">confidence: {{ f.confidence }}</span>
+            <span class="badge">{{ t('rep.confidence') }}: {{ f.confidence }}</span>
             {% if f.cwe %}<span class="badge">CWE: {{ f.cwe|join(', ') }}</span>{% endif %}
             {% if f.mitre %}<span class="badge">MITRE: {{ f.mitre|map(attribute='id')|join(', ') }}</span>{% endif %}
           </div>
-          {% if f.remediation %}<div style="border-left:2px solid var(--acc2);padding-left:12px;color:#cfe9d9"><b>Как исправить:</b> {{ f.remediation }}</div>{% endif %}
+          {% if f.remediation %}<div style="border-left:2px solid var(--acc2);padding-left:12px;color:#cfe9d9"><b>{{ t('rep.fix') }}:</b> {{ f.remediation }}</div>{% endif %}
         </div>
       </details>
       {% endfor %}
@@ -132,18 +130,16 @@
     {% endfor %}
 
     <div class="card" style="margin-top:34px">
-      <h3>Нужен разбор и фиксы?</h3>
-      <p style="margin:6px 0 14px">Покажу, что закрывать первым, и проверю повторно после правок.</p>
+      <h3>{{ t('rep.cta.t') }}</h3>
+      <p style="margin:6px 0 14px">{{ t('rep.cta.d') }}</p>
       <div class="row">
-        <a class="btn pri" href="#scan">Оставить заявку</a>
-        <a class="btn" href="{{ url_for('index') }}#pricing">Тарифы</a>
+        <a class="btn pri" href="{{ url_for('index') }}#scan">{{ t('rep.cta.b') }}</a>
+        <a class="btn" href="{{ url_for('index') }}#pricing">{{ t('nav.pricing') }}</a>
       </div>
     </div>
 
     <p style="color:var(--muted);font-size:12.5px;margin-top:22px;max-width:75ch">
-      Veyra — детерминированный статический анализатор. Код не исполнялся, сетевые запросы при сканировании не выполнялись.
-      Отчёт — основание для ручной проверки, а не окончательный вердикт и не гарантия безопасности.
-      Ссылка на отчёт живёт 24 часа.
+      {{ t('rep.disclaimer') }}
     </p>
   </div>
 </section>

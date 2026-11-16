@@ -7,9 +7,10 @@ import time
 from collections import defaultdict, deque
 from pathlib import Path
 
-from flask import Flask, abort, redirect, render_template, request, send_file, url_for
+from flask import Flask, abort, make_response, redirect, render_template, request, send_file, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from .i18n import get_lang, t
 from .report import group_findings, split_docs, to_markdown
 from .scanner import ScanError, cleanup_old, run_scan
 
@@ -20,6 +21,21 @@ STORAGE.mkdir(parents=True, exist_ok=True)
 app = Flask(__name__, template_folder=str(BASE_DIR / "templates"), static_folder=str(BASE_DIR / "static"))
 app.config["MAX_CONTENT_LENGTH"] = 9 * 1024 * 1024
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+app.config["LANG"] = "en"
+
+
+@app.context_processor
+def inject_i18n():
+    lang = get_lang()
+    return {"lang": lang, "t": lambda key, **kw: t(key, lang, **kw)}
+
+
+@app.after_request
+def remember_lang(resp):
+    q = (request.args.get("lang") or "").lower()
+    if q in ("en", "ru"):
+        resp.set_cookie("lang", q, max_age=31536000, samesite="Lax")
+    return resp
 
 HITS: dict[str, deque] = defaultdict(deque)
 LIMIT_PER_HOUR = int(os.environ.get("AUDIT_RATE_LIMIT", "6"))
@@ -54,11 +70,11 @@ def index():
 def scan():
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "?").split(",")[0].strip()
     if not _rate_ok(ip):
-        return render_template("index.html", error="Слишком много сканов с этого адреса. Попробуй через час."), 429
+        return render_template("index.html", error=t("err.rate", get_lang())), 429
 
     f = request.files.get("archive")
     if not f or not f.filename:
-        return render_template("index.html", error="Прикрепи .zip с исходниками агента."), 400
+        return render_template("index.html", error=t("err.no_file", get_lang())), 400
 
     data = f.read()
     try:

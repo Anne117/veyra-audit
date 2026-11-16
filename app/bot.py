@@ -28,14 +28,14 @@ LIMIT_PER_DAY = int(os.environ.get("BOT_LIMIT_PER_DAY", "3"))
 HITS: dict[int, list[float]] = {}
 
 WELCOME = (
-    "🐾 Veyra Audit — статическая проверка AI-агентов.\n\n"
-    "Пришли .zip со скиллами, промптами и MCP-конфигами — верну отчёт: "
-    "что агент читает, куда отправляет данные, какие команды выполняет "
-    "и какие цепочки складываются в атаку.\n\n"
-    "Код не исполняется, сетевые запросы при скане не делаются.\n\n"
-    "Бесплатно: 3 скана в сутки.\n"
-    "Разовый аудит проекта — 4 900 ₽, разбор отчёта и повторный скан после правок включены.\n\n"
-    "Просто отправь архив файлом."
+    "🐾 Veyra Audit — static security review for AI agents.\n\n"
+    "Send a .zip with skills, prompts and MCP configs — you get a report: "
+    "what the agent reads, where it sends data, which commands it runs "
+    "and how those pieces chain into an attack path.\n\n"
+    "No code is executed, no network requests are made during a scan.\n\n"
+    "Free: 3 scans per day.\n"
+    "One-off project audit — €490, includes a report walkthrough and a re-scan after fixes.\n\n"
+    "Just send the archive as a file."
 )
 
 
@@ -73,9 +73,9 @@ def summary_text(d: dict) -> str:
     c = d.get("counts", {})
     top = [f for f in d.get("findings", []) if f.get("severity") in ("CRITICAL", "HIGH")][:3]
     lines = [
-        f"<b>Отчёт готов</b> · <code>{d['scan_id']}</code>",
-        f"Оценка риска (код и конфиги): <b>{d.get('score_code', 0)}/100</b> · <b>{d.get('risk_code')}</b>",
-        f"Документация отдельно: {d.get('doc_findings', 0)} находок (в оценку не входят)",
+        f"<b>Report ready</b> · <code>{d['scan_id']}</code>",
+        f"Risk (code and configs): <b>{d.get('risk_code')}</b> · volume {d.get('score_code', 0)}/100",
+        f"Documentation: {d.get('doc_findings', 0)} findings, out of scope",
         f"CRITICAL {c.get('critical', 0)} · HIGH {c.get('high', 0)} · "
         f"MEDIUM {c.get('medium', 0)} · LOW {c.get('low', 0)}",
         "",
@@ -85,7 +85,7 @@ def summary_text(d: dict) -> str:
                      f"{f.get('file')}:{f.get('line')}")
     if top:
         lines.append("")
-    lines.append(f"Полная версия: {PUBLIC_BASE}/r/{d['scan_id']}")
+    lines.append(f"Full report: {PUBLIC_BASE}/r/{d['scan_id']}")
     return "\n".join(lines)
 
 
@@ -94,25 +94,24 @@ def handle_document(msg: dict):
     doc = msg["document"]
     name = doc.get("file_name", "agent.zip")
     if not name.lower().endswith(".zip"):
-        send(chat_id, "Нужен .zip с исходниками агента.")
+        send(chat_id, "Send a .zip with the agent sources.")
         return
     if doc.get("file_size", 0) > 8 * 1024 * 1024:
-        send(chat_id, "Файл больше 8 МБ — пришли архив поменьше.")
+        send(chat_id, "The file is over 8 MB — send a smaller archive.")
         return
     if not allowed(msg["from"]["id"]):
-        send(chat_id, "Лимит бесплатных сканов на сегодня исчерпан (3). "
-                      "Напиши @annearintseva — обсудим пакет.")
+        send(chat_id, "Free scan limit reached for today (3). Commercial use requires a license — contact us.")
         return
 
-    send(chat_id, "Сканирую… это обычно 10–30 секунд.")
+    send(chat_id, "Scanning… usually 10–30 seconds.")
     info = api("getFile", json={"file_id": doc["file_id"]})
     if not info.get("ok"):
-        send(chat_id, "Не смогла получить файл из Telegram, попробуй ещё раз.")
+        send(chat_id, "Could not fetch the file from Telegram, please retry.")
         return
     path = info["result"]["file_path"]
     raw = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{path}", timeout=120)
     if raw.status_code != 200:
-        send(chat_id, "Не смогла скачать файл из Telegram.")
+        send(chat_id, "Could not download the file from Telegram.")
         return
 
     try:
@@ -121,7 +120,7 @@ def handle_document(msg: dict):
         send(chat_id, f"⚠️ {e}")
         return
     except Exception as e:  # noqa: BLE001
-        send(chat_id, f"Внутренняя ошибка: {e.__class__.__name__}")
+        send(chat_id, f"Internal error: {e.__class__.__name__}")
         return
 
     cleanup_old(STORAGE)
@@ -131,12 +130,12 @@ def handle_document(msg: dict):
 
     send(chat_id, summary_text(d))
     send_doc(chat_id, f"veyra-audit-{d['scan_id']}.md", md.encode(),
-             caption="Полный отчёт в Markdown. JSON пришлю по запросу.")
+             caption="Full report in Markdown. Ask for JSON if you need it.")
 
 
 def main():
     if not TOKEN:
-        raise SystemExit("BOT_TOKEN не задан")
+        raise SystemExit("BOT_TOKEN is not set")
     print("Veyra Audit bot started", flush=True)
     offset = 0
     while True:
@@ -157,12 +156,12 @@ def main():
                     send(msg["chat"]["id"], WELCOME)
                 elif msg.get("text", "").startswith("/price"):
                     send(msg["chat"]["id"],
-                         "0 ₽ — 3 скана в сутки\n"
-                         "4 900 ₽ — разовый аудит проекта (до 5 архивов, разбор, повторный скан)\n"
-                         "39 900 ₽/мес — безлимит и гейт в CI\n\n"
-                         "Заказ: @annearintseva")
+                         "Free — 3 scans per day (personal use)\n"
+                         "€490 — one-off project audit (up to 5 archives, walkthrough, re-scan)\n"
+                         "€3 900/mo — unlimited scans and a CI gate (commercial license)\n\n"
+                         "Contact: @your_handle")
                 elif msg.get("text"):
-                    send(msg["chat"]["id"], "Пришли .zip с агентом — или /start, чтобы посмотреть возможности.")
+                    send(msg["chat"]["id"], "Send a .zip with the agent — or /start to see what it does.")
         except Exception as e:  # noqa: BLE001
             print("loop error:", e.__class__.__name__, flush=True)
             time.sleep(3)

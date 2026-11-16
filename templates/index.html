@@ -3,12 +3,12 @@
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="kicker">● статический аудит AI-агентов</span>
-      <h1>Проверь агента <em>до того</em>, как он получит доступ</h1>
-      <p class="lead">Загрузи zip со скиллами, промптами и MCP-конфигами — получи отчёт: что агент умеет читать, куда отправляет данные, какие команды выполняет и какие цепочки складываются в атаку.</p>
+      <span class="kicker">● {{ t('hero.badge') }}</span>
+      <h1>{{ t('hero.title1') }} <em>{{ t('hero.title2') }}</em></h1>
+      <p class="lead">{{ t('hero.lead') }}</p>
       <div class="row">
-        <a class="btn pri" href="#scan">Проверить бесплатно</a>
-        <a class="btn" href="#checks">Что внутри отчёта</a>
+        <a class="btn pri" href="#scan">{{ t('hero.cta1') }}</a>
+        <a class="btn" href="#checks">{{ t('hero.cta2') }}</a>
       </div>
       <div class="chips">
         <span class="chip">prompt injection</span>
@@ -20,76 +20,76 @@
     </div>
 
     <div class="card upload" id="scan">
-      <h3>Скан за ~30 секунд</h3>
-      <p style="margin-bottom:16px">Один архив до 8 МБ. Код не запускается — только чтение и разбор.</p>
+      <h3>{{ t('upload.title') }}</h3>
+      <p style="margin-bottom:16px">{{ t('upload.sub') }}</p>
       {% if error %}<div class="err">⚠️ {{ error }}</div>{% endif %}
       <form method="post" action="{{ url_for('scan') }}" enctype="multipart/form-data" id="scanForm">
-        <label for="archive">Архив с агентом</label>
+        <label for="archive">{{ t('upload.label') }}</label>
         <div class="drop" id="drop">
-          <b>Перетащи .zip</b> или нажми, чтобы выбрать
+          <b>{{ t('upload.drop') }}</b>
           <input type="file" name="archive" id="archive" accept=".zip,application/zip" required>
         </div>
         <div class="drop" id="picked" style="display:none;border-style:solid;border-color:rgba(74,222,128,.45);color:var(--acc2)"></div>
-        <button class="btn pri" type="submit" style="width:100%;justify-content:center;margin-top:14px">Запустить аудит →</button>
+        <button class="btn pri" type="submit" style="width:100%;justify-content:center;margin-top:14px">{{ t('upload.button') }}</button>
       </form>
-      <div class="micro">Первый скан бесплатно. Файл удаляется сразу после разбора, отчёт — через 24 часа.</div>
+      <div class="micro">{{ t('upload.micro') }}</div>
     </div>
   </div>
 </section>
 
 <section class="pad" id="checks">
   <div class="wrap">
-    <h2>Что находит</h2>
-    <p class="sub">Не «подозрительный файл», а конкретная строка, доказательство и способ закрыть.</p>
+    <h2>{{ t('checks.title') }}</h2>
+    <p class="sub">{{ t('checks.sub') }}</p>
     <div class="cols3">
-      <div class="card feat"><div class="ic">🔑</div><h3>Секреты в коде</h3><p>Токены, пароли и ключи, зашитые в скиллы, конфиги и примеры.</p></div>
-      <div class="card feat"><div class="ic">📡</div><h3>Эксфильтрация</h3><p>Чтение чувствительных файлов и передача их наружу — по цепочке, а не по одному признаку.</p></div>
-      <div class="card feat"><div class="ic">⚡</div><h3>Опасные команды</h3><p><code>curl | bash</code>, eval, запуск скачанного кода, обход подтверждений.</p></div>
-      <div class="card feat"><div class="ic">🧠</div><h3>Prompt injection</h3><p>Инструкции, переопределяющие системный промпт или отключающие защиту.</p></div>
-      <div class="card feat"><div class="ic">🔌</div><h3>Опасные MCP</h3><p>Удалённые endpoint'ы, динамическая установка пакетов, широкий доступ к файлам.</p></div>
-      <div class="card feat"><div class="ic">🕸️</div><h3>Цепочки атак</h3><p>Как безобидные по отдельности компоненты складываются в путь до утечки.</p></div>
+      <div class="card feat"><div class="ic">🔑</div><h3>{{ t('checks.1.t') }}</h3><p>{{ t('checks.1.d') }}</p></div>
+      <div class="card feat"><div class="ic">📡</div><h3>{{ t('checks.2.t') }}</h3><p>{{ t('checks.2.d') }}</p></div>
+      <div class="card feat"><div class="ic">⚡</div><h3>{{ t('checks.3.t') }}</h3><p>{{ t('checks.3.d') }}</p></div>
+      <div class="card feat"><div class="ic">🧠</div><h3>{{ t('checks.4.t') }}</h3><p>{{ t('checks.4.d') }}</p></div>
+      <div class="card feat"><div class="ic">🔌</div><h3>{{ t('checks.5.t') }}</h3><p>{{ t('checks.5.d') }}</p></div>
+      <div class="card feat"><div class="ic">🕸️</div><h3>{{ t('checks.6.t') }}</h3><p>{{ t('checks.6.d') }}</p></div>
     </div>
   </div>
 </section>
 
 <section class="pad" id="how">
   <div class="wrap">
-    <h2>Как это работает</h2>
-    <p class="sub">Детерминированно: одинаковый вход — одинаковый отчёт. Без LLM в решениях.</p>
+    <h2>{{ t('how.title') }}</h2>
+    <p class="sub">{{ t('how.sub') }}</p>
     <div class="steps">
-      <div class="card step"><h3>Загружаешь архив</h3><p>Скиллы, <code>SKILL.md</code>, MCP-конфиги, промпты, инструменты.</p></div>
-      <div class="card step"><h3>Сканер разбирает</h3><p>Строит граф компонентов, проверяет правила и корреляцию, собирает доказательства.</p></div>
-      <div class="card step"><h3>Получаешь отчёт</h3><p>Оценка риска, находки по severity, ссылки на CWE/MITRE и приоритет фиксов.</p></div>
+      <div class="card step"><h3>{{ t('how.1.t') }}</h3><p>{{ t('how.1.d') }}</p></div>
+      <div class="card step"><h3>{{ t('how.2.t') }}</h3><p>{{ t('how.2.d') }}</p></div>
+      <div class="card step"><h3>{{ t('how.3.t') }}</h3><p>{{ t('how.3.d') }}</p></div>
     </div>
   </div>
 </section>
 
 <section class="pad" id="pricing">
   <div class="wrap">
-    <h2>Тарифы</h2>
-    <p class="sub">Платишь за разбор, а не за подписку на дашборд.</p>
+    <h2>{{ t('pricing.title') }}</h2>
+    <p class="sub">{{ t('pricing.sub') }}</p>
     <div class="price">
-      <div class="card plan"><div class="tag">старт</div><div class="num">0 ₽</div>
-        <ul><li>1 скан в сутки</li><li>полный отчёт по одному архиву</li><li>Markdown и JSON</li></ul>
-        <a class="btn" href="#scan">Загрузить архив</a></div>
-      <div class="card plan hot"><div class="tag">разовый аудит</div><div class="num">4 900 ₽ <small>/ проект</small></div>
-        <ul><li>до 5 архивов в одном проекте</li><li>приоритизация фиксов</li><li>разбор отчёта 30 минут онлайн</li><li>повторный скан после правок — бесплатно</li></ul>
-        <a class="btn pri" href="#scan">Оставить заявку</a></div>
-      <div class="card plan"><div class="tag">встройка в CI</div><div class="num">39 900 ₽ <small>/ мес</small></div>
-        <ul><li>безлимитные сканы</li><li>гейт по severity в пайплайне</li><li>SARIF для GitHub/GitLab</li><li>поддержка в рабочем чате</li></ul>
-        <a class="btn" href="#scan">Обсудить</a></div>
+      <div class="card plan"><div class="tag">{{ t('plan.free.tag') }}</div><div class="num">{{ t('plan.free.price') }}</div>
+        <ul><li>{{ t('plan.free.l1') }}</li><li>{{ t('plan.free.l2') }}</li><li>{{ t('plan.free.l3') }}</li></ul>
+        <a class="btn" href="#scan">{{ t('plan.free.cta') }}</a></div>
+      <div class="card plan hot"><div class="tag">{{ t('plan.pro.tag') }}</div><div class="num">{{ t('plan.pro.price') }} <small>{{ t('plan.pro.unit') }}</small></div>
+        <ul><li>{{ t('plan.pro.l1') }}</li><li>{{ t('plan.pro.l2') }}</li><li>{{ t('plan.pro.l3') }}</li><li>{{ t('plan.pro.l4') }}</li></ul>
+        <a class="btn pri" href="#scan">{{ t('plan.pro.cta') }}</a></div>
+      <div class="card plan"><div class="tag">{{ t('plan.ci.tag') }}</div><div class="num">{{ t('plan.ci.price') }} <small>{{ t('plan.ci.unit') }}</small></div>
+        <ul><li>{{ t('plan.ci.l1') }}</li><li>{{ t('plan.ci.l2') }}</li><li>{{ t('plan.ci.l3') }}</li><li>{{ t('plan.ci.l4') }}</li></ul>
+        <a class="btn" href="#scan">{{ t('plan.ci.cta') }}</a></div>
     </div>
   </div>
 </section>
 
 <section class="pad faq" id="faq">
   <div class="wrap">
-    <h2>Вопросы</h2>
+    <h2>{{ t('faq.title') }}</h2>
     <div style="margin-top:20px">
-      <details><summary>Вы запускаете мой код?</summary><p>Нет. Veyra — статический анализатор: файлы читаются и разбираются, ничего не исполняется, сетевые запросы при скане не выполняются.</p></details>
-      <details><summary>Куда уходит архив?</summary><p>Во временную папку на сервере, удаляется сразу после разбора. Сам отчёт хранится 24 часа и доступен только по ссылке со случайным ID.</p></details>
-      <details><summary>Это заменит пентест?</summary><p>Нет. Это проверка конфигурации и кода агента на известные классы проблем. Она дешевле и быстрее пентеста, но не заменяет его и не даёт гарантий.</p></details>
-      <details><summary>Что если находок нет?</summary><p>Отчёт покажет покрытие: какие файлы проверены и какие правила применены. «Чисто» означает «не найдено известных паттернов», а не «безопасно абсолютно».</p></details>
+      <details><summary>{{ t('faq.q1') }}</summary><p>{{ t('faq.a1') }}</p></details>
+      <details><summary>{{ t('faq.q2') }}</summary><p>{{ t('faq.a2') }}</p></details>
+      <details><summary>{{ t('faq.q3') }}</summary><p>{{ t('faq.a3') }}</p></details>
+      <details><summary>{{ t('faq.q4') }}</summary><p>{{ t('faq.a4') }}</p></details>
     </div>
   </div>
 </section>
@@ -101,7 +101,7 @@
   input.addEventListener('change', () => {
     if (input.files.length) {
       picked.style.display = 'block';
-      picked.textContent = '✓ ' + input.files[0].name + ' · ' + (input.files[0].size / 1024 / 1024).toFixed(1) + ' МБ';
+      picked.textContent = '✓ ' + input.files[0].name + ' · ' + (input.files[0].size / 1024 / 1024).toFixed(1) + ' MB';
       drop.style.display = 'none';
     }
   });
@@ -110,7 +110,7 @@
   drop.addEventListener('drop', ev => { if (ev.dataTransfer.files.length) { input.files = ev.dataTransfer.files; input.dispatchEvent(new Event('change')); } });
   document.getElementById('scanForm').addEventListener('submit', () => {
     const b = document.querySelector('#scanForm button[type=submit]');
-    b.textContent = 'Сканирую…'; b.disabled = true;
+    b.textContent = 'Scanning…'; b.disabled = true;
   });
 </script>
 {% endblock %}
