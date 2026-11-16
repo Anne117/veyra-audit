@@ -15,8 +15,15 @@
       <div class="row">
         <a class="btn sm" href="{{ url_for('report_md', scan_id=d.scan_id) }}{% if include_docs %}?docs=1{% endif %}">↓ Markdown</a>
         <a class="btn sm" href="{{ url_for('report_json', scan_id=d.scan_id) }}">↓ JSON</a>
+        <a class="btn sm pri" href="{{ url_for('report_pdf', scan_id=d.scan_id) }}{% if include_docs %}?docs=1{% endif %}">↓ {{ t('rep.pdf') }}</a>
       </div>
     </div>
+
+    {% if request.args.get('already') %}
+    <div class="err" style="border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.08);color:#cbb9ff">
+      {{ t('rep.already') }}
+    </div>
+    {% endif %}
 
     {% set rl = risk %}
     {% set pct = score if score <= 100 else 100 %}
@@ -54,7 +61,7 @@
           </div>
           {% endfor %}
         </div>
-        <div style="color:var(--muted);font-size:12.5px;margin-top:12px">{{ t('rep.in_scope') }}: {{ shown_count }}{% if docs_count %} · {{ t('rep.docs_sep') }}: {{ docs_count }}{% endif %}</div>
+        <div style="color:var(--muted);font-size:12.5px;margin-top:12px">{{ t('rep.in_scope') }}: {{ shown_count }} / {{ total_count }}{% if docs_count %} · {{ t('rep.docs_sep') }}: {{ docs_count }}{% endif %}</div>
         <div class="row" style="gap:8px;margin-top:12px">
           {% if include_docs %}
             <a class="btn sm" href="{{ url_for('report', scan_id=d.scan_id) }}">{{ t('rep.only_code') }}</a>
@@ -129,6 +136,30 @@
       {% endif %}
     {% endfor %}
 
+
+    {% if locked_count > 0 %}
+    <div style="position:relative;margin-top:24px;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface);min-height:380px">
+      <div aria-hidden="true" style="filter:blur(5px);opacity:.5;padding:18px 20px;user-select:none;min-height:380px">
+        <div class="finding"><span class="prevsev crit">CRIT</span><div><div class="t">Hidden finding — unlock to read the evidence</div><div class="loc"><em>path/to/file:00</em> · confidence HIGH</div></div></div>
+        <div class="finding"><span class="prevsev crit">CRIT</span><div><div class="t">Hidden finding — unlock to read the evidence</div><div class="loc"><em>path/to/file:00</em> · confidence MEDIUM</div></div></div>
+        <div class="finding"><span class="prevsev high">HIGH</span><div><div class="t">Hidden finding — unlock to read the evidence</div><div class="loc"><em>path/to/file:00</em> · confidence HIGH</div></div></div>
+      </div>
+      <div style="position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(180deg,rgba(11,11,12,.45),rgba(11,11,12,.94))">
+        <div style="text-align:center;padding:28px;max-width:520px">
+          <div style="font:600 12px/1 var(--mono);color:var(--acc);margin-bottom:10px">🔒 {{ t('rep.locked.more', n=locked_count) }}</div>
+          <h3 style="margin:0 0 8px;font-size:19px;font-weight:600">{{ t('rep.lock.title') }}</h3>
+          <p style="margin:0 0 16px;color:var(--fg2);font-size:14px">{{ t('rep.lock.text', n=free_n) }}</p>
+          {% if unlock_error %}<div class="err" style="margin-bottom:12px">{{ t('rep.lock.wrong') }}</div>{% endif %}
+          <form method="post" action="{{ url_for('unlock', scan_id=d.scan_id) }}" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+            <input name="code" placeholder="{{ t('rep.lock.code') }}" required
+                   style="width:290px;padding:10px 12px;border-radius:8px;border:1px solid var(--line-strong);background:var(--bg);color:var(--fg);font:13px var(--mono)">
+            <button class="btn pri" type="submit">{{ t('rep.lock.apply') }}</button>
+          </form>
+          <p style="margin:12px 0 0;color:var(--muted);font-size:12px">{{ t('rep.lock.note') }}</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
     <div class="card" style="margin-top:34px">
       <h3>{{ t('rep.cta.t') }}</h3>
       <p style="margin:6px 0 14px">{{ t('rep.cta.d') }}</p>

@@ -87,6 +87,19 @@ separately and can be included in the score with `?docs=1`. Correlated findings
 
 ---
 
+
+## Free preview and paid unlock
+
+- One free scan per bundle: the archive hash is remembered, and a repeat upload
+  of the same bundle opens the first report instead of running a new one.
+- A free report shows the totals plus the first **3 findings**. The rest is
+  masked behind an unlock panel.
+- Unlock with an access code (`UNLOCK_CODES`, comma-separated) — the report
+  stays unlocked for 7 days via a cookie per scan.
+- Every report exports to **PDF**: a clean A4 document with a cover block,
+  risk summary, findings with evidence and fix notes. Free users get a preview
+  PDF with the locked findings counted but not shown.
+
 ## Routes
 
 | Method | Path | Purpose |
@@ -96,6 +109,8 @@ separately and can be included in the score with `?docs=1`. Correlated findings
 | `GET` | `/r/<id>` | HTML report (`?docs=1` includes documentation) |
 | `GET` | `/r/<id>.md` | Markdown report |
 | `GET` | `/r/<id>.json` | raw Veyra JSON |
+| `GET` | `/r/<id>.pdf` | PDF report |
+| `POST` | `/r/<id>/unlock` | unlock the full report with a code |
 | `GET` | `/healthz` | health check |
 
 ---

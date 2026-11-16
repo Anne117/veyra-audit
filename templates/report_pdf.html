@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<title>Veyra Audit — {{ d.source_name }}</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm 18mm; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:10.5pt/1.5 "Helvetica Neue", Arial, sans-serif; color:#16161a; }
+  .cover { border-bottom:2px solid #16161a; padding-bottom:10mm; margin-bottom:8mm; }
+  .brand { display:flex; justify-content:space-between; align-items:baseline; font-size:9pt; letter-spacing:.04em; color:#5b5b66; }
+  .brand b { color:#16161a; font-size:11pt; letter-spacing:0; }
+  h1 { font-size:22pt; line-height:1.1; margin:8mm 0 2mm; letter-spacing:-.02em; }
+  .meta { font-size:9pt; color:#5b5b66; }
+  .hero { display:flex; gap:8mm; align-items:flex-start; margin:6mm 0 0; }
+  .riskbox { border:1px solid #d8d8de; border-radius:3mm; padding:4mm 5mm; min-width:38mm; }
+  .riskbox .k { font-size:8pt; color:#5b5b66; }
+  .riskbox .v { font-size:17pt; font-weight:700; letter-spacing:-.02em; margin-top:1mm; }
+  .riskbox .v.CRITICAL { color:#b3261e; }
+  .riskbox .v.HIGH { color:#b45309; }
+  .riskbox .v.MEDIUM { color:#8a6d00; }
+  .riskbox .v.LOW, .riskbox .v.SAFE { color:#3f6b4f; }
+  .counts { display:flex; gap:4mm; margin-top:4mm; }
+  .counts div { border:1px solid #e2e2e8; border-radius:2mm; padding:2.5mm 4mm; font-size:8.5pt; color:#5b5b66; }
+  .counts b { display:block; font-size:13pt; color:#16161a; margin-top:1mm; }
+  h2 { font-size:12pt; margin:8mm 0 3mm; letter-spacing:-.01em; }
+  h2 .n { color:#7a7a86; font-weight:400; font-size:9pt; margin-left:2mm; }
+  .f { border-top:1px solid #e2e2e8; padding:3.5mm 0; page-break-inside:avoid; }
+  .f .top { display:flex; justify-content:space-between; gap:4mm; }
+  .f .t { font-weight:600; font-size:10pt; }
+  .f .sev { font-size:7.5pt; font-weight:700; letter-spacing:.05em; padding:1mm 2mm; border-radius:1.5mm; border:1px solid #d8d8de; }
+  .f .sev.CRITICAL { color:#b3261e; border-color:#e7b3ae; background:#fdf1f0; }
+  .f .sev.HIGH { color:#b45309; border-color:#ecd0ae; background:#fdf6ee; }
+  .f .sev.MEDIUM { color:#8a6d00; border-color:#e8dfae; background:#fdfaee; }
+  .f .sev.LOW { color:#4a4a55; }
+  .f .loc { font:8pt/1.4 "SFMono-Regular", Menlo, monospace; color:#6a6a75; margin-top:1mm; }
+  .f .desc { margin:1.5mm 0 0; color:#3a3a44; font-size:9pt; }
+  .f pre { margin:2mm 0 0; padding:2.5mm; background:#f6f6f8; border-radius:1.5mm; font:7.5pt/1.45 monospace; color:#2a2a33; white-space:pre-wrap; }
+  .fix { margin-top:2mm; border-left:2px solid #7c6cf6; padding-left:3mm; font-size:9pt; color:#2f3b33; }
+  .locked { margin-top:6mm; border:1px dashed #c9c9d2; border-radius:3mm; padding:6mm; text-align:center; color:#5b5b66; font-size:9pt; }
+  .locked b { display:block; color:#16161a; font-size:11pt; margin-bottom:2mm; }
+  footer { position:fixed; bottom:0; left:0; right:0; border-top:1px solid #e2e2e8; padding-top:2.5mm; font-size:7.5pt; color:#7a7a86; display:flex; justify-content:space-between; }
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="brand"><span><b>Veyra Audit</b> · static security review</span><span>{{ d.scan_id }} · {{ d.elapsed_ms }} ms</span></div>
+  <h1>{{ d.source_name }}</h1>
+  <div class="meta">Scan {{ d.scan_id }} · {{ total_count }} findings · {{ 'full report' if unlocked else 'free preview (' ~ free_n ~ ' of ' ~ total_count ~ ')' }}</div>
+
+  <div class="hero">
+    <div class="riskbox">
+      <div class="k">Risk level</div>
+      <div class="v {{ risk }}">{{ risk }}</div>
+      <div class="k" style="margin-top:2mm">volume {{ score }}/100</div>
+    </div>
+    <div class="counts">
+      {% for s in order %}
+      <div>{{ s }}<b>{{ counts[s] }}</b></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% for sev in order %}
+  {% if groups[sev] %}
+  <h2>{{ sev }} <span class="n">{{ groups[sev]|length }}</span></h2>
+  {% for f in groups[sev] %}
+  <div class="f">
+    <div class="top">
+      <div class="t">{{ f.title }}</div>
+      <div class="sev {{ sev }}">{{ sev }}</div>
+    </div>
+    <div class="loc">{{ f.file }}:{{ f.line }} · {{ f.rule_id }} · confidence {{ f.confidence }}</div>
+    {% if f.evidence %}<p class="desc">{{ f.evidence }}</p>{% endif %}
+    {% if f.matched_text %}<pre>{{ f.matched_text }}</pre>{% endif %}
+    {% if f.cwe or f.mitre %}<div class="loc">{% if f.cwe %}CWE: {{ f.cwe|join(', ') }}{% endif %}{% if f.mitre %} · MITRE: {{ f.mitre|map(attribute='id')|join(', ') }}{% endif %}</div>{% endif %}
+    {% if f.remediation %}<div class="fix">Fix: {{ f.remediation }}</div>{% endif %}
+  </div>
+  {% endfor %}
+  {% endif %}
+{% endfor %}
+
+{% if locked_count > 0 %}
+<div class="locked">
+  <b>🔒 Full report is locked</b>
+  {{ locked_count }} more findings are hidden in this free preview. Unlock the full report to see every finding, evidence and fix.
+</div>
+{% endif %}
+
+<footer>
+  <span>Veyra Audit · deterministic static analysis · no code executed</span>
+  <span>{{ d.scan_id }}</span>
+</footer>
+</body>
+</html>

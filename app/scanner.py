@@ -6,6 +6,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -171,6 +172,7 @@ def run_scan(archive: bytes, filename: str = "upload.zip") -> dict:
 
         data = _strip_paths(data, work)
         data["scan_id"] = scan_id
+        data["bundle_hash"] = hashlib.sha256(archive).hexdigest()[:16]
         data["source_name"] = filename
         data["elapsed_ms"] = int((time.time() - started) * 1000)
         data["agent_roots"] = roots
