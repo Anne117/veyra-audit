@@ -25,7 +25,17 @@
   .counts b { display:block; font-size:13pt; color:#16161a; margin-top:1mm; }
   h2 { font-size:12pt; margin:8mm 0 3mm; letter-spacing:-.01em; }
   h2 .n { color:#7a7a86; font-weight:400; font-size:9pt; margin-left:2mm; }
-  .f { border-top:1px solid #e2e2e8; padding:3.5mm 0; page-break-inside:avoid; }
+  .f { border-top:1px solid #e2e2e8; border-left:1.2mm solid #dcdce2; padding:3.5mm 0 3.5mm 4mm; page-break-inside:avoid; }
+  .f.CRITICAL { border-left-color:#e4685a; }
+  .f.HIGH { border-left-color:#e39a4a; }
+  .f.MEDIUM { border-left-color:#d9c05a; }
+  .f.LOW { border-left-color:#8a8a94; }
+  .bar { display:flex; height:4mm; border-radius:1.3mm; overflow:hidden; background:#eeeef2; margin-top:5mm; }
+  .bar div { height:100%; }
+  .bar .CRITICAL { background:#e4685a; } .bar .HIGH { background:#e39a4a; }
+  .bar .MEDIUM { background:#d9c05a; } .bar .LOW { background:#8a8a94; } .bar .SAFE { background:#6fbf8c; }
+  .legend { display:flex; gap:6mm; margin-top:2.5mm; font-size:8pt; color:#5b5b66; }
+  .legend i { display:inline-block; width:2mm; height:2mm; border-radius:0.5mm; margin-right:1.2mm; }
   .f .top { display:flex; justify-content:space-between; gap:4mm; }
   .f .t { font-weight:600; font-size:10pt; }
   .f .sev { font-size:7.5pt; font-weight:700; letter-spacing:.05em; padding:1mm 2mm; border-radius:1.5mm; border:1px solid #d8d8de; }
@@ -52,12 +62,23 @@
     <div class="riskbox">
       <div class="k">Risk level</div>
       <div class="v {{ risk }}">{{ risk }}</div>
-      <div class="k" style="margin-top:2mm">volume {{ score }}/100</div>
+      <div class="k" style="margin-top:2mm">volume {{ score }}/100{% if score >= 100 %} (capped){% endif %}</div>
     </div>
+    <div style="flex:1">
     <div class="counts">
       {% for s in order %}
       <div>{{ s }}<b>{{ counts[s] }}</b></div>
       {% endfor %}
+    </div>
+      {% set total = counts.values()|sum %}
+      <div class="bar">
+        {% if total == 0 %}<div class="SAFE" style="width:100%"></div>{% else %}
+        {% for s in order %}{% if counts[s] %}<div class="{{ s }}" style="width:{{ (counts[s]/total*100)|round(2) }}%"></div>{% endif %}{% endfor %}
+        {% endif %}
+      </div>
+      <div class="legend">
+        {% for s in order %}<span><i class="{{ s }}"></i>{{ s }} {{ counts[s] }}</span>{% endfor %}
+      </div>
     </div>
   </div>
 </div>
@@ -66,7 +87,7 @@
   {% if groups[sev] %}
   <h2>{{ sev }} <span class="n">{{ groups[sev]|length }}</span></h2>
   {% for f in groups[sev] %}
-  <div class="f">
+  <div class="f {{ sev }}">
     <div class="top">
       <div class="t">{{ f.title }}</div>
       <div class="sev {{ sev }}">{{ sev }}</div>

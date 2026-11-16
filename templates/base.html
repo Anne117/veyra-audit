@@ -162,6 +162,24 @@
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 
+
+  /* severity chart */
+  .sevbar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--raised);border:1px solid var(--line)}
+  .sevbar .seg{height:100%}
+  .seg.CRITICAL{background:#e4685a}
+  .seg.HIGH{background:#e39a4a}
+  .seg.MEDIUM{background:#d9c05a}
+  .seg.LOW{background:#8a8a94}
+  .seg.SAFE{background:#6fbf8c}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--fg2)}
+  .legend .dot{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:6px}
+  .legend b{color:var(--fg);font-family:var(--mono);margin-left:5px;font-weight:600}
+  .clean-note{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px;color:#a9e0c0}
+  details.f{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--line-strong);border-radius:10px;padding:14px 16px;margin-bottom:8px}
+  details.f.CRITICAL{border-left-color:#e4685a}
+  details.f.HIGH{border-left-color:#e39a4a}
+  details.f.MEDIUM{border-left-color:#d9c05a}
+  details.f.LOW{border-left-color:#8a8a94}
   @media(max-width:960px){
     .hero-grid{grid-template-columns:1fr;gap:32px}
     .checks{grid-template-columns:1fr;gap:0}

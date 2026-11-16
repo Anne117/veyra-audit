@@ -9,7 +9,7 @@
         <h1 style="font-size:clamp(26px,3.6vw,40px);margin:10px 0 6px">{{ t('rep.title') }}</h1>
         <p class="sub" style="margin:0">
           {{ d.source_name }} · scan <code style="font-family:var(--mono);color:var(--muted)">{{ d.scan_id }}</code> ·
-          {{ d.elapsed_ms }} ms · {{ shown_count }} findings
+          {{ d.elapsed_ms }} ms · {{ total_count }} findings · {{ shown_count }} shown
         </p>
       </div>
       <div class="row">
@@ -26,15 +26,16 @@
     {% endif %}
 
     {% set rl = risk %}
-    {% set pct = score if score <= 100 else 100 %}
+    {# кольцо показывает уровень риска, а не объём: 100/100 при HIGH читалось бы как «максимум» #}
+    {% set pct = {'CRITICAL':100,'HIGH':72,'MEDIUM':48,'LOW':24,'SAFE':6}.get(rl, 6) %}
     <div class="hero-grid" style="grid-template-columns:340px 1fr;gap:16px">
       <div class="card" style="display:flex;gap:20px;align-items:center">
         <div style="width:112px;height:112px;border-radius:50%;flex:0 0 112px;position:relative;
              background:conic-gradient({% if rl=='CRITICAL' %}#fb7185{% elif rl=='HIGH' %}#fb923c{% elif rl=='MEDIUM' %}#fbbf24{% elif rl=='LOW' %}#94a3b8{% else %}#4ade80{% endif %} {{ pct*3.6 }}deg, rgba(255,255,255,.07) 0);">
           <div style="position:absolute;inset:9px;border-radius:50%;background:var(--panel);display:grid;place-items:center;text-align:center">
             <div>
-              <div style="font-size:26px;font-weight:780;letter-spacing:-.03em;line-height:1">{{ score }}</div>
-              <div style="font:10px/1 var(--mono);color:var(--muted);margin-top:4px">/100 {{ t('rep.volume') }}</div>
+              <div style="font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1">{{ rl }}</div>
+              <div style="font:10px/1 var(--mono);color:var(--muted);margin-top:4px">risk</div>
             </div>
           </div>
         </div>
@@ -53,14 +54,30 @@
 
       <div class="card">
         <div style="font:12px/1 var(--mono);color:var(--muted);margin-bottom:14px">{{ t('rep.findings') }}</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        {% set total = counts.values()|sum %}
+        <div style="display:flex;align-items:baseline;gap:10px">
+          <div style="font-size:32px;font-weight:600;letter-spacing:-.03em;line-height:1">{{ total }}</div>
+          <div style="color:var(--muted);font-size:13px">{{ 'finding' if total == 1 else 'findings' }} in scope</div>
+        </div>
+        <div class="sevbar" style="margin-top:14px">
+          {% if total == 0 %}
+            <div class="seg SAFE" style="width:100%"></div>
+          {% else %}
+            {% for sev in order %}{% if counts[sev] %}
+              <div class="seg {{ sev }}" style="width:{{ (counts[sev] / total * 100)|round(2) }}%"></div>
+            {% endif %}{% endfor %}
+          {% endif %}
+        </div>
+        <div class="legend">
           {% for sev in order %}
-          <div style="border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.02)">
-            <div class="sev {{ sev }}" style="display:inline-block">{{ sev }}</div>
-            <div style="font-size:24px;font-weight:750;letter-spacing:-.03em;margin-top:8px">{{ counts[sev] }}</div>
-          </div>
+          <span><i class="dot seg {{ sev }}"></i>{{ sev }}<b>{{ counts[sev] }}</b></span>
           {% endfor %}
         </div>
+        {% if total == 0 %}
+          <div class="clean-note">✓ Nothing found in code and configs — see the coverage note below</div>
+        {% elif counts['CRITICAL'] == 0 and counts['HIGH'] == 0 %}
+          <div class="clean-note">✓ No critical or high findings — only medium and low</div>
+        {% endif %}
         <div style="color:var(--muted);font-size:12.5px;margin-top:12px">{{ t('rep.in_scope') }}: {{ shown_count }} / {{ total_count }}{% if docs_count %} · {{ t('rep.docs_sep') }}: {{ docs_count }}{% endif %}</div>
         <div class="row" style="gap:8px;margin-top:12px">
           {% if include_docs %}
@@ -113,7 +130,7 @@
         <span style="color:var(--muted);font-weight:500;font-size:14px;margin-left:8px">{{ groups[sev]|length }}</span>
       </h2>
       {% for f in groups[sev] %}
-      <details>
+      <details class="f {{ sev }}">
         <summary>
           <span class="sev {{ sev }}">{{ f.rule_id }}</span>
           <span style="flex:1">{{ f.title }}</span>
